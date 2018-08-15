@@ -1,0 +1,11 @@
+{
+	"browser": true,
+	"curly": true,
+	"esversion": 6,
+	"expr": true,
+	"globals": {
+		"kontra": false,
+		"localStorage": false
+	},
+	"node": true
+}
