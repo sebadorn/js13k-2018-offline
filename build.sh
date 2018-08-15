@@ -2,11 +2,24 @@
 
 cd $(dirname "$0")
 
-TERSER='./.node/bin/terser'
+TERSER="$HOME/.node/bin/terser"
 
-cp 'dev/index.htm' 'build/index.htm'
-cp 'dev/k.js' 'build/k.js'
+if [ -d 'build' ]; then
+	rm -r 'build'
+fi
 
-$TERSER 'dev/i.js' --ecma 8 --compress --mangle -o 'build/i.js'
+mkdir 'build'
+
+cp 'dev/index.html' 'build/index.html'
+cp dev/*.js 'build/'
+
+cd 'build' > '/dev/null'
+$TERSER 'i.js' --ecma 6 --compress --mangle -o 'i.js'
+sed -i'' 's/^"use strict";//' 'i.js'
+
+zip -q -r offline.zip ./*
+
+echo '  - Max size: 13312 bytes'
+stat --printf="  - ZIP size: %s bytes\n" offline.zip
 
 echo '  - Done.'

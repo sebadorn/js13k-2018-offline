@@ -1,35 +1,61 @@
 'use strict';
 
 
-(function() {
-	kontra.init();
-	kontra.canvas.width = window.innerWidth;
-	kontra.canvas.height = window.innerHeight;
+/* jshint -W018 */
+( () => {
+	let map = [
+		0, 0, 0,
+		0, 0, 0,
+		0, 0, 0
+	];
 
-	let sprite = kontra.sprite({
-	  x: 100,        // starting x,y position of the sprite
-	  y: 80,
-	  color: 'red',  // fill color of the sprite rectangle
-	  width: 20,     // width and height of the sprite rectangle
-	  height: 40,
-	  dx: 2          // move the sprite 2px to the right every frame
-	});
 
-	let loop = kontra.gameLoop( {
+	// Shortcuts.
+	window.g = {
+		k: kontra,
+		mc: 3, // number of map columns
+		mr: 3, // number of map rows
+		tw: 100, // tile width (and height) [px]
+		ww: window.innerWidth, // window width
+		wh: window.innerHeight // window height
+	};
+
+
+	// Setup
+	g.k.init();
+	g.k.canvas.width = g.ww;
+	g.k.canvas.height = g.wh;
+
+	let tiles = [];
+	let j = 0;
+	let x = ~~( ( g.ww - g.mc * g.tw ) / 2 );
+	let y = ~~( ( g.wh - g.mr * g.tw ) / 2 );
+
+	map.forEach( ( v, i ) => {
+		tiles.push(
+			g.k.sprite( {
+				x: x + g.tw * ( i % g.mc ),
+				y: y + g.tw * j,
+				color: 'green',
+				width: g.tw,
+				height: g.tw
+			} )
+		);
+
+		j += !( ++i % g.mc );
+	} );
+
+	let loop = g.k.gameLoop( {
+
 		update: () => {
-		    sprite.update();
-
-		    // wrap the sprites position when it reaches
-		    // the edge of the screen
-		    if (sprite.x > kontra.canvas.width) {
-		      sprite.x = -sprite.width;
-		    }
+			//
 		},
 
 		render: () => {
-			sprite.render();
+			tiles.forEach( t => t.render() );
 		}
+
 	} );
 
 	loop.start();
-})();
+} )();

@@ -4,8 +4,8 @@
 	"esversion": 6,
 	"expr": true,
 	"globals": {
-		"kontra": false,
-		"localStorage": false
+		"g": true,
+		"kontra": false
 	},
 	"node": true
 }
