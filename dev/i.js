@@ -102,38 +102,6 @@ class Tile {
 	}
 
 
-	/**
-	 * Update the tile.
-	 * @param {Char} player
-	 */
-	toShadow( player ) {
-		// Update fog.
-
-		// Distance of tile to the player.
-		let dx = Math.abs( player.x - this.x );
-		let dy = Math.abs( player.y - this.y );
-		// Euclidean distance.
-		let de = Math.sqrt( dx * dx + dy * dy );
-
-		// Start the fog (darken a tile) starting
-		// at 3 fields from the player.
-		let f = Math.min( 3 / de, 1 );
-
-		// c = c.map( v => ~~( v * f ) );
-
-		this.s.color = `rgba(0,0,0,0.5)`;
-
-
-		// Update position. Move so the
-		// player is always in the center.
-		this.s.x = this.x - player.x;
-		this.s.y = this.y - player.y;
-
-
-		this.s.update();
-	}
-
-
 }
 
 
@@ -143,8 +111,8 @@ class Tile {
 	window.g = {
 		rnd: Math.random,
 		k: kontra,
-		mc: 20, // number of map columns
-		mr: 20, // number of map rows
+		mc: 64, // number of map columns
+		mr: 64, // number of map rows
 		tw: 32, // tile width (and height) [px]
 		ww: window.innerWidth, // window width
 		wh: window.innerHeight // window height
@@ -191,29 +159,28 @@ class Tile {
 	let groundCanvas = g.k.canvas;
 
 
-	// Now create a shadow overlay.
+	// Now create a fog overlay.
+	// The generated image will only be 1/4 and
+	// will be to the bottom right of the player.
+	//
+	// We will then render it 4 times and just
+	// flip it around to cover the other sides.
 
-	let shadowCanvas = document.getElementById( 'shadow' );
-	shadowCanvas.width = g.mc;
-	shadowCanvas.height = g.mr;
+	let fogCanvas = document.getElementById( 'fog' );
+	fogCanvas.width = g.mc;
+	fogCanvas.height = g.mr;
 
-	let shadowCtx = shadowCanvas.getContext( '2d' );
-	shadowCtx.imageSmoothingEnabled = false;
+	let fogCtx = fogCanvas.getContext( '2d' );
+	fogCtx.imageSmoothingEnabled = false;
 
 	for( let y = 0; y < g.mr; y++ ) {
 		for( let x = 0; x < g.mc; x++ ) {
-			// Distance of tile to the player.
-			let dx = Math.abs( 10 - x );
-			let dy = Math.abs( 10 - y );
-			// Euclidean distance.
-			let de = Math.sqrt( dx * dx + dy * dy );
+			// Euclidean distance from origin.
+			let de = Math.sqrt( x * x + y * y );
 
-			// Start the fog (darken a tile) starting
-			// at 3 fields from the player.
 			let f = 1 - Math.min( 3 / de, 1 );
-
-			shadowCtx.fillStyle = `rgba(0,0,0,${f})`;
-			shadowCtx.fillRect( x, y, 1, 1 );
+			fogCtx.fillStyle = `rgba(0,0,0,${f})`;
+			fogCtx.fillRect( x, y, 1, 1 );
 		}
 	}
 
@@ -226,15 +193,27 @@ class Tile {
 	g.k.context.imageSmoothingEnabled = false;
 
 	let ground = g.k.sprite( { image: groundCanvas } );
-	let shadow = g.k.sprite( { image: shadowCanvas } );
+	let fog = g.k.sprite( { image: fogCanvas } );
 
+	let pStartX = 10;
+	let pStartY = 10;
 	let player = new Char(0, 0, g.xoff, g.yoff);
-	player.mv( 10, 10 );
+	player.mv( pStartX, pStartY );
 
 	g.k.keys.bind( 'left', () => player.mv( -1, 0 ) );
 	g.k.keys.bind( 'right', () => player.mv( 1, 0 ) );
 	g.k.keys.bind( 'up', () => player.mv( 0, -1 ) );
 	g.k.keys.bind( 'down', () => player.mv( 0, 1 ) );
+
+	let pSX = pStartX * g.tw;
+	let pSY = pStartY * g.tw;
+	let fogOffsetX = g.xoff - pSX;
+	let fogOffsetY = g.yoff - pSY;
+
+	// Source and destination areas for fog images.
+	let sourceCut = [1, 1, g.mc - 1, g.mr - 1];
+	let dest = [0, 0, g.mw, g.mh];
+	let destCut = [g.tw, g.tw, g.mw - g.tw, g.mh - g.tw];
 
 	let loop = g.k.gameLoop( {
 
@@ -243,24 +222,72 @@ class Tile {
 		},
 
 		render: () => {
-			let overlayX = g.xoff - player.x * g.tw;
-			let overlayY = g.yoff - player.y * g.tw;
+			let ctx = g.k.context;
+
 
 			// Draw the ground image but upscale it.
-			// The tiles in the original are only 1x1px.
-			g.k.context.drawImage(
+			// The tiles in the original are only 1x1 px.
+			ctx.drawImage(
 				ground.image,
-				overlayX, overlayY,
+				g.xoff - player.x * g.tw,
+				g.yoff - player.y * g.tw,
 				g.mw, g.mh
 			);
 
-			g.k.context.drawImage(
-				shadow.image,
-				g.xoff, g.yoff,
-				g.mw, g.mh
-			);
+
+			// Draw the characters.
 
 			player.s.render();
+
+
+			// Draw the fog.
+
+			// Bottom right.
+			ctx.save();
+			ctx.translate(
+				fogOffsetX + pSX,
+				fogOffsetY + pSY
+			);
+			ctx.drawImage(
+				fog.image,
+				...sourceCut,
+				...destCut
+			);
+			ctx.restore();
+
+			// Bottom left.
+			ctx.save();
+			ctx.translate(
+				fogOffsetX + pSX + g.tw,
+				fogOffsetY + pSY
+			);
+			ctx.scale( -1, 1 );
+			ctx.drawImage( fog.image, ...dest );
+			ctx.restore();
+
+			// Top right.
+			ctx.save();
+			ctx.translate(
+				fogOffsetX + pSX,
+				fogOffsetY + pSY + g.tw
+			);
+			ctx.scale( 1, -1 );
+			ctx.drawImage( fog.image, ...dest );
+			ctx.restore();
+
+			// Top left.
+			ctx.save();
+			ctx.translate(
+				fogOffsetX + pSX + g.tw,
+				fogOffsetY + pSY + g.tw
+			);
+			ctx.scale( -1, -1 );
+			ctx.drawImage(
+				fog.image,
+				...sourceCut,
+				...destCut
+			);
+			ctx.restore();
 		}
 
 	} );
