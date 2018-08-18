@@ -57,6 +57,25 @@ class Char {
 
 
 /**
+ * Find a path from a to b.
+ * @param  {object} a
+ * @param  {number} a.x
+ * @param  {number} a.y
+ * @param  {object} b
+ * @param  {number} b.x
+ * @param  {number} b.y
+ * @return {number[]}
+ */
+function findPath( a, b ) {
+	let index = a.y * g.mc + a.x;
+	let path = [index];
+	path.push( b.y * g.mc + b.x );
+
+	return path;
+}
+
+
+/**
  * Get a certain canvas element and its 2D context.
  * @param  {string} id
  * @return {Array} Canvas and 2D context.
@@ -73,15 +92,54 @@ function getCanvasAndCtx( id ) {
 }
 
 
+/**
+ * Get a starting position for a monster.
+ * @return {number[]}
+ */
+function getMonsterStartPos() {
+	let x = ~~( g.rnd() * g.mc );
+	let y = ~~( g.rnd() * g.mr );
+
+	// TODO:
+
+	return [x, y];
+}
+
+
+/**
+ * Get a starting position for the player.
+ * It has to be at least a certain distance from
+ * the goal and there has to be a path to the
+ * goal. The game is not allowed to be impossible!
+ * @param  {object} goal
+ * @param  {number} goal.x
+ * @param  {number} goal.y
+ * @return {Array}
+ */
+function getPlayerStartPos( goal ) {
+	// Never start directly at the border.
+	let x = 2 + ~~( g.rnd() * ( g.mc - 4 ) );
+	let y = 2 + ~~( g.rnd() * ( g.mr - 4 ) );
+	let index = y * g.mc + x;
+	let path = []; // A path to the goal.
+
+	// Make sure the starting point is walkable.
+	g.map[index] = 2;
+
+	return [x, y, path];
+}
+
+
 
 ( () => {
 	// Shortcuts.
 
 	window.g = {
+		isAtGoal: false,
 		rnd: Math.random,
 		k: kontra,
-		mc: 64, // number of map columns
-		mr: 64, // number of map rows
+		mc: 32, // number of map columns
+		mr: 32, // number of map rows
 		tw: 32, // default tile width (and height) [px]
 		ww: window.innerWidth, // window width
 		wh: window.innerHeight // window height
@@ -103,12 +161,28 @@ function getCanvasAndCtx( id ) {
 	map.fill( 2 );
 	g.map = map;
 
+
 	// Place stones. ~3% of map should be stone.
+
 	let numStones = map.length * 0.03;
 
 	while( numStones-- > 0 ) {
 		map[~~( g.rnd() * map.length )] = 4;
 	}
+
+
+	// Place the goal.
+	// Make sure it has some minimum
+	// margin to the map borders.
+
+	let goal = {
+		x: 2 + ~~( g.rnd() * ( g.mc - 4 ) ),
+		y: 2 + ~~( g.rnd() * ( g.mr - 4 ) )
+	};
+
+	map[goal.y * g.mc + goal.x] = 8;
+
+
 
 	// Generate static ground. For performance
 	// reasons render all the tiles only once
@@ -122,8 +196,18 @@ function getCanvasAndCtx( id ) {
 	map.forEach( ( v, i ) => {
 		let x = i % g.mc;
 		let green = 90 + g.rnd() * 20;
+		let c = `rgb(18,${~~green},40)`;
 
-		groundCtx.fillStyle = ( v & 4 ) ? 'rgb(40,40,40)' : `rgb(18,${~~green},40)`;
+		// Stone.
+		if( v & 4 ) {
+			c = '#282828';
+		}
+		// Goal.
+		else if( v & 8 ) {
+			c = '#29BEB2';
+		}
+
+		groundCtx.fillStyle = c;
 		groundCtx.fillRect( x, y, 1, 1 );
 
 		y += !( ++i % g.mc );
@@ -161,8 +245,7 @@ function getCanvasAndCtx( id ) {
 	let ground = g.k.sprite( { image: groundCanvas } );
 	let fog = g.k.sprite( { image: fogCanvas } );
 
-	let pStartX = 12;
-	let pStartY = 12;
+	let [pStartX, pStartY, path] = getPlayerStartPos();
 	let player = new Char( pStartX, pStartY );
 
 	g.k.keys.bind( 'left', () => player.mv( -1, 0 ) );
@@ -182,10 +265,17 @@ function getCanvasAndCtx( id ) {
 
 	let wwHalf = g.ww / 2;
 	let whHalf = g.wh / 2;
+	let centerLimitW = g.ww - g.mw;
+	let centerLimitH = g.wh - g.mh;
 
 	let loop = g.k.gameLoop( {
 
 		update: () => {
+			if( player.x == goal.x && player.y == goal.y && !g.isAtGoal ) {
+				g.isAtGoal = true;
+				window.alert( '!' ); // TODO:
+			}
+
 			player.s.update();
 		},
 
@@ -197,10 +287,10 @@ function getCanvasAndCtx( id ) {
 			// Center on player, but stop at borders.
 
 			let cx = wwHalf - player.s.x;
-			cx = Math.max( Math.min( cx, 0 ), g.ww - g.mw );
+			cx = Math.max( Math.min( cx, 0 ), centerLimitW );
 
 			let cy = whHalf - player.s.y;
-			cy = Math.max( Math.min( cy, 0 ), g.wh - g.mh );
+			cy = Math.max( Math.min( cy, 0 ), centerLimitH );
 
 			ctx.translate( ~~cx, ~~cy );
 
