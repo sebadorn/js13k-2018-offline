@@ -1,9 +1,14 @@
 <!DOCTYPE html>
 <meta charset="utf-8" />
 <title>js13k 2018</title>
-<style>*{background:#333;height:100%;margin:0;overflow:hidden;padding:0;}</style>
+<style>
+*{background:#333;margin:0;overflow:hidden;padding:0;}
+canvas{background:transparent;}
+</style>
 <body>
-<canvas></canvas>
+<canvas id="main"></canvas>
+<canvas id="ground" hidden></canvas>
+<canvas id="shadow" hidden></canvas>
 <script src="k.js"></script>
 <script src="i.js"></script>
 </body>
