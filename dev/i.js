@@ -64,12 +64,97 @@ class Char {
  * @param  {object} b
  * @param  {number} b.x
  * @param  {number} b.y
- * @return {number[]}
+ * @return {?Array}
  */
 function findPath( a, b ) {
-	let index = a.y * g.mc + a.x;
-	let path = [index];
-	path.push( b.y * g.mc + b.x );
+	let markFieldsAround = ( x, y, step ) => {
+		let next = [];
+		let xp = x + 1;
+		let xm = x - 1;
+		let yp = y + 1;
+		let ym = y - 1;
+
+		// Check if there is a field in the 4 directions
+		// and if there is one, if it can be walked on.
+		//
+		// Also do not check already checked fields again.
+		// Since we first check all low-number (step) fields,
+		// we cannot find a shorter path at a later point.
+
+		// To the right.
+		if(
+			x < g.mc && !m2[xp][y] &&
+			g.map[y * g.mc + xp] & 2
+		) {
+			m2[xp][y] = step;
+			next.push( { x: xp, y, step } );
+		}
+
+		// To the left.
+		if(
+			x > 0 && !m2[xm][y] &&
+			g.map[y * g.mc + xm] & 2
+		) {
+			m2[xm][y] = step;
+			next.push( { x: xm, y, step } );
+		}
+
+		// Look below.
+		if(
+			y < g.mr && !m2[x][yp] &&
+			g.map[yp * g.mc + x] & 2
+		) {
+			m2[x][yp] = step;
+			next.push( { x, y: yp, step } );
+		}
+
+		// Look above.
+		if(
+			y > 0 && !m2[x][ym] &&
+			g.map[ym * g.mc + x] & 2
+		) {
+			m2[x][ym] = step;
+			next.push( { x, y: ym, step } );
+		}
+
+		return next;
+	};
+
+	// 2D array as map.
+	let m2 = Array( g.mc ).fill( Array( g.mr ).fill( 0 ) );
+	m2[a.x][a.y] = 1;
+
+	// Explore all the connected fields, starting from
+	// position "a". Stop when all paths are exhausted
+	// or a connection to "b" has been found.
+	let nextFields = markFieldsAround( a.x, a.y, 2 );
+	let steps = 0;
+
+	while( nextFields.length ) {
+		let n = nextFields.splice( 0, 1 )[0];
+
+		if( n.x == b.x && n.y == b.y ) {
+			steps = n.step;
+			break;
+		}
+
+		nextFields = nextFields.concat(
+			markFieldsAround( n.x, n.y, n.step + 1 )
+		);
+	}
+
+	if( !steps ) {
+		return null;
+	}
+
+	// There is at least 1 connection. Now gather the path.
+	// We start at the end, position "b".
+	let path = [b];
+
+	while( steps ) {
+		// TODO: Get a close field which has a value of "steps - 1".
+		steps--;
+	}
 
 	return path;
 }
