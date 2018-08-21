@@ -2,221 +2,275 @@
 /* jshint -W018 */
 
 
-class Char {
-
-
-	/**
-	 * A character which can move around.
-	 * @constructor
-	 * @param {number} x - X index on map.
-	 * @param {number} y - Y index on map.
-	 */
-	constructor( x, y ) {
-		this.x = x;
-		this.y = y;
-
-		this.s = g.k.sprite( {
-			x: x * g.tw,
-			y: y * g.tw,
-			color: '#FFFFFF',
-			width: g.tw,
-			height: g.tw
-		} );
-	}
-
-
-	/**
-	 * Move the character.
-	 * @param {number} x - X index change on map.
-	 * @param {number} y - Y index change on map.
-	 */
-	mv( x, y ) {
-		this.x += x;
-		this.y += y;
-
-		let t = g.map[this.y * g.mc + this.x];
-
-		// Not passable terrain or outside bounds.
-		if(
-			t & 4 ||
-			this.x < 0 ||
-			this.y < 0 ||
-			this.x >= g.mc ||
-			this.y >= g.mr
-		) {
-			this.x -= x;
-			this.y -= y;
-		}
-
-		this.s.x = this.x * g.tw;
-		this.s.y = this.y * g.tw;
-	}
-
-
-}
-
-
-/**
- * Find a path from a to b.
- * @param  {object} a
- * @param  {number} a.x
- * @param  {number} a.y
- * @param  {object} b
- * @param  {number} b.x
- * @param  {number} b.y
- * @return {?Array}
- */
-function findPath( a, b ) {
-	let markFieldsAround = ( x, y, step ) => {
-		let next = [];
-		let xp = x + 1;
-		let xm = x - 1;
-		let yp = y + 1;
-		let ym = y - 1;
-
-		// Check if there is a field in the 4 directions
-		// and if there is one, if it can be walked on.
-		//
-		// Also do not check already checked fields again.
-		// Since we first check all low-number (step) fields,
-		// we cannot find a shorter path at a later point.
-
-		// To the right.
-		if(
-			x < g.mc && !m2[xp][y] &&
-			g.map[y * g.mc + xp] & 2
-		) {
-			m2[xp][y] = step;
-			next.push( { x: xp, y, step } );
-		}
-
-		// To the left.
-		if(
-			x > 0 && !m2[xm][y] &&
-			g.map[y * g.mc + xm] & 2
-		) {
-			m2[xm][y] = step;
-			next.push( { x: xm, y, step } );
-		}
-
-		// Look below.
-		if(
-			y < g.mr && !m2[x][yp] &&
-			g.map[yp * g.mc + x] & 2
-		) {
-			m2[x][yp] = step;
-			next.push( { x, y: yp, step } );
-		}
-
-		// Look above.
-		if(
-			y > 0 && !m2[x][ym] &&
-			g.map[ym * g.mc + x] & 2
-		) {
-			m2[x][ym] = step;
-			next.push( { x, y: ym, step } );
-		}
-
-		return next;
-	};
-
-	// 2D array as map.
-	let m2 = Array( g.mc ).fill( Array( g.mr ).fill( 0 ) );
-	m2[a.x][a.y] = 1;
-
-	// Explore all the connected fields, starting from
-	// position "a". Stop when all paths are exhausted
-	// or a connection to "b" has been found.
-	let nextFields = markFieldsAround( a.x, a.y, 2 );
-	let steps = 0;
-
-	while( nextFields.length ) {
-		let n = nextFields.splice( 0, 1 )[0];
-
-		if( n.x == b.x && n.y == b.y ) {
-			steps = n.step;
-			break;
-		}
-
-		nextFields = nextFields.concat(
-			markFieldsAround( n.x, n.y, n.step + 1 )
-		);
-	}
-
-	if( !steps ) {
-		return null;
-	}
-
-	// There is at least 1 connection. Now gather the path.
-	// We start at the end, position "b".
-	let path = [b];
-
-	while( steps ) {
-		// TODO: Get a close field which has a value of "steps - 1".
-		steps--;
-	}
-
-	return path;
-}
-
-
-/**
- * Get a certain canvas element and its 2D context.
- * @param  {string} id
- * @return {Array} Canvas and 2D context.
- */
-function getCanvasAndCtx( id ) {
-	let canvas = document.getElementById( id );
-	canvas.width = g.mc;
-	canvas.height = g.mr;
-
-	let ctx = canvas.getContext( '2d' );
-	ctx.imageSmoothingEnabled = false;
-
-	return [canvas, ctx];
-}
-
-
-/**
- * Get a starting position for a monster.
- * @return {number[]}
- */
-function getMonsterStartPos() {
-	let x = ~~( g.rnd() * g.mc );
-	let y = ~~( g.rnd() * g.mr );
-
-	// TODO:
-
-	return [x, y];
-}
-
-
-/**
- * Get a starting position for the player.
- * It has to be at least a certain distance from
- * the goal and there has to be a path to the
- * goal. The game is not allowed to be impossible!
- * @param  {object} goal
- * @param  {number} goal.x
- * @param  {number} goal.y
- * @return {Array}
- */
-function getPlayerStartPos( goal ) {
-	// Never start directly at the border.
-	let x = 2 + ~~( g.rnd() * ( g.mc - 4 ) );
-	let y = 2 + ~~( g.rnd() * ( g.mr - 4 ) );
-	let index = y * g.mc + x;
-	let path = []; // A path to the goal.
-
-	// Make sure the starting point is walkable.
-	g.map[index] = 2;
-
-	return [x, y, path];
-}
-
-
-
 ( () => {
+
+
+	class Char {
+
+
+		/**
+		 * A character which can move around.
+		 * @constructor
+		 * @param {number} x - X index on map.
+		 * @param {number} y - Y index on map.
+		 */
+		constructor( x, y ) {
+			this.x = x;
+			this.y = y;
+
+			this.s = g.k.sprite( {
+				x: x * g.tw,
+				y: y * g.tw,
+				color: '#FFFFFF',
+				width: g.tw,
+				height: g.tw
+			} );
+		}
+
+
+		/**
+		 * Move the character.
+		 * @param {number} x - X index change on map.
+		 * @param {number} y - Y index change on map.
+		 */
+		mv( x, y ) {
+			this.x += x;
+			this.y += y;
+
+			let t = g.map[this.y * g.mc + this.x];
+
+			// Not passable terrain or outside bounds.
+			if(
+				t & 4 ||
+				this.x < 0 ||
+				this.y < 0 ||
+				this.x >= g.mc ||
+				this.y >= g.mr
+			) {
+				this.x -= x;
+				this.y -= y;
+			}
+
+			this.s.x = this.x * g.tw;
+			this.s.y = this.y * g.tw;
+		}
+
+
+	}
+
+
+	/**
+	 * Find a path from a to b.
+	 * @param  {object} a
+	 * @param  {number} a.x
+	 * @param  {number} a.y
+	 * @param  {object} b
+	 * @param  {number} b.x
+	 * @param  {number} b.y
+	 * @return {?object[]}
+	 */
+	function findPath( a, b ) {
+		let markFieldsAround = ( x, y, step ) => {
+			let next = [];
+			let xp = x + 1;
+			let xm = x - 1;
+			let yp = y + 1;
+			let ym = y - 1;
+
+
+			// Check if there is a field in the 4 directions
+			// and if there is one, if it can be walked on.
+			//
+			// Also do not check already checked fields again.
+			// Since we first check all low-number (step) fields,
+			// we cannot find a shorter path at a later point.
+
+			// To the right.
+			if(
+				xp < g.mc && !m2[xp][y] &&
+				g.map[y * g.mc + xp] & 2
+			) {
+				m2[xp][y] = step;
+				next.push( { x: xp, y, step } );
+			}
+
+			// To the left.
+			if(
+				x > 0 && !m2[xm][y] &&
+				g.map[y * g.mc + xm] & 2
+			) {
+				m2[xm][y] = step;
+				next.push( { x: xm, y, step } );
+			}
+
+			// Look below.
+			if(
+				yp < g.mr && !m2[x][yp] &&
+				g.map[yp * g.mc + x] & 2
+			) {
+				m2[x][yp] = step;
+				next.push( { x, y: yp, step } );
+			}
+
+			// Look above.
+			if(
+				y > 0 && !m2[x][ym] &&
+				g.map[ym * g.mc + x] & 2
+			) {
+				m2[x][ym] = step;
+				next.push( { x, y: ym, step } );
+			}
+
+			return next;
+		};
+
+		// 2D array as map.
+		let m2 = Array( g.mc );
+
+		for( let i = 0; i < g.mc; i++ ) {
+			m2[i] = Array( g.mr ).fill( 0 );
+		}
+
+		m2[a.x][a.y] = 1;
+
+		// Explore all the connected fields, starting from
+		// position "a". Stop when all paths are exhausted
+		// or a connection to "b" has been found.
+		let nextFields = [{ x: a.x, y: a.y, step: 1 }];
+		let steps = 0;
+
+		while( nextFields.length ) {
+			let n = nextFields.splice( 0, 1 )[0];
+
+			if( n.x == b.x && n.y == b.y ) {
+				steps = n.step;
+				break;
+			}
+
+			nextFields = nextFields.concat(
+				markFieldsAround( n.x, n.y, n.step + 1 )
+			);
+		}
+
+		if( !steps ) {
+			return null;
+		}
+
+		// There is at least 1 connection. Now gather the path.
+		// We start at the end, position "b".
+		let path = [b];
+		let x = b.x;
+		let y = b.y;
+
+		while( --steps ) {
+			let field = null;
+
+			if( x > 0 ) {
+				field = m2[x - 1][y];
+
+				if( field == steps ) {
+					path.push( { x: x - 1, y } );
+					x--;
+					continue;
+				}
+			}
+
+			if( x < g.mc - 1 ) {
+				field = m2[x + 1][y];
+
+				if( field == steps ) {
+					path.push( { x: x + 1, y } );
+					x++;
+					continue;
+				}
+			}
+
+			if( y > 0 ) {
+				field = m2[x][y - 1];
+
+				if( field == steps ) {
+					path.push( { x, y: y - 1 } );
+					y--;
+					continue;
+				}
+			}
+
+			if( y < g.mr - 1 ) {
+				field = m2[x][y + 1];
+
+				if( field == steps ) {
+					path.push( { x, y: y + 1 } );
+					y++;
+					continue;
+				}
+			}
+		}
+
+		return path;
+	}
+
+
+	/**
+	 * Get a certain canvas element and its 2D context.
+	 * @param  {string} id
+	 * @return {Array} Canvas and 2D context.
+	 */
+	function getCanvasAndCtx( id ) {
+		let canvas = document.getElementById( id );
+		canvas.width = g.mc;
+		canvas.height = g.mr;
+
+		let ctx = canvas.getContext( '2d' );
+		ctx.imageSmoothingEnabled = false;
+
+		return [canvas, ctx];
+	}
+
+
+	/**
+	 * Get a starting position for a monster.
+	 * @return {number[]}
+	 */
+	function getMonsterStartPos() {
+		let x = ~~( g.rnd() * g.mc );
+		let y = ~~( g.rnd() * g.mr );
+
+		// TODO:
+
+		return [x, y];
+	}
+
+
+	/**
+	 * Get a starting position for the player.
+	 * It has to be at least a certain distance from
+	 * the goal and there has to be a path to the
+	 * goal. The game is not allowed to be impossible!
+	 * @return {Array}
+	 */
+	function getPlayerStartPos() {
+		// Never start directly at the border.
+		let x = 2 + ~~( g.rnd() * ( g.mc - 4 ) );
+		let y = 2 + ~~( g.rnd() * ( g.mr - 4 ) );
+
+		// Invalid position: If same as goal
+		// or no path to the goal exists.
+		if(
+			( x == goal.x && y == goal.y ) ||
+			!findPath( goal, { x, y } )
+		) {
+			return getPlayerStartPos();
+		}
+
+		let index = y * g.mc + x;
+
+		// Make sure the starting point is walkable.
+		g.map[index] = 2;
+
+		return [x, y];
+	}
+
+
 	// Shortcuts.
 
 	window.g = {
@@ -330,7 +384,7 @@ function getPlayerStartPos( goal ) {
 	let ground = g.k.sprite( { image: groundCanvas } );
 	let fog = g.k.sprite( { image: fogCanvas } );
 
-	let [pStartX, pStartY, path] = getPlayerStartPos();
+	let [pStartX, pStartY] = getPlayerStartPos();
 	let player = new Char( pStartX, pStartY );
 
 	g.k.keys.bind( 'left', () => player.mv( -1, 0 ) );
@@ -438,4 +492,5 @@ function getPlayerStartPos( goal ) {
 	} );
 
 	loop.start();
+
 } )();
