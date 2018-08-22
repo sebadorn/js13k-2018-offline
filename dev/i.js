@@ -17,6 +17,7 @@
 		constructor( x, y ) {
 			this.x = x;
 			this.y = y;
+			this.path = null;
 
 			this.s = g.k.sprite( {
 				x: x * g.tw,
@@ -49,6 +50,9 @@
 			) {
 				this.x -= x;
 				this.y -= y;
+			}
+			else {
+				this.path = findPath( goal, this );
 			}
 
 			this.s.x = this.x * g.tw;
@@ -277,8 +281,8 @@
 		isAtGoal: false,
 		rnd: Math.random,
 		k: kontra,
-		mc: 32, // number of map columns
-		mr: 32, // number of map rows
+		mc: 128, // number of map columns
+		mr: 128, // number of map rows
 		tw: 32, // default tile width (and height) [px]
 		ww: window.innerWidth, // window width
 		wh: window.innerHeight // window height
@@ -406,6 +410,11 @@
 	let whHalf = g.wh / 2;
 	let centerLimitW = g.ww - g.mw;
 	let centerLimitH = g.wh - g.mh;
+	let twHalf = g.tw / 2;
+	let lw = ~~( g.tw / 10 );
+	let ctx = g.k.context;
+
+	player.path = findPath( goal, player );
 
 	let loop = g.k.gameLoop( {
 
@@ -419,17 +428,18 @@
 		},
 
 		render: () => {
-			let ctx = g.k.context;
 			ctx.save();
 
 
 			// Center on player, but stop at borders.
 
 			let cx = wwHalf - player.s.x;
-			cx = Math.max( Math.min( cx, 0 ), centerLimitW );
+			cx = ( cx > 0 ) ? 0 : cx;
+			cx = ( cx < centerLimitW ) ? centerLimitW : cx;
 
 			let cy = whHalf - player.s.y;
-			cy = Math.max( Math.min( cy, 0 ), centerLimitH );
+			cy = ( cy > 0 ) ? 0 : cy;
+			cy = ( cy < centerLimitH ) ? centerLimitH : cy;
 
 			ctx.translate( ~~cx, ~~cy );
 
@@ -441,6 +451,33 @@
 
 			// Draw the characters.
 			player.s.render();
+
+			if( player.path ) {
+				ctx.beginPath();
+				ctx.strokeStyle = '#6BBEE1';
+				ctx.lineWidth = lw;
+				ctx.lineJoin = 'miter';
+
+				let pp = player.path;
+				let step = pp[0];
+
+				ctx.moveTo(
+					step.x * g.tw + twHalf,
+					step.y * g.tw + twHalf
+				);
+
+				for( let i = 1; i < pp.length; i++ ) {
+					step = pp[i];
+
+					ctx.lineTo(
+						step.x * g.tw + twHalf,
+						step.y * g.tw + twHalf
+					);
+				}
+
+				ctx.stroke();
+			}
+
 			ctx.translate( player.s.x, player.s.y );
 
 
