@@ -52,7 +52,7 @@
 				this.y -= y;
 			}
 			else {
-				this.path = findPath( goal, this );
+				this.path = findPathToGoal( this.x, this.y );
 			}
 
 			this.s.x = this.x * g.tw;
@@ -64,16 +64,14 @@
 
 
 	/**
-	 * Find a path from a to b.
-	 * @param  {object} a
-	 * @param  {number} a.x
-	 * @param  {number} a.y
-	 * @param  {object} b
-	 * @param  {number} b.x
-	 * @param  {number} b.y
-	 * @return {?object[]}
+	 * Generate a map for use with path
+	 * finding for the static goal.
+	 * @param  {object} goal
+	 * @param  {number} goal.x
+	 * @param  {number} goal.y
+	 * @return {object[]}
 	 */
-	function findPath( a, b ) {
+	function generatePathMap( goal ) {
 		let markFieldsAround = ( x, y, step ) => {
 			let next = [];
 			let xp = x + 1;
@@ -135,42 +133,49 @@
 			m2[i] = Array( g.mr ).fill( 0 );
 		}
 
-		m2[a.x][a.y] = 1;
+		m2[goal.x][goal.y] = 1;
 
 		// Explore all the connected fields, starting from
-		// position "a". Stop when all paths are exhausted
-		// or a connection to "b" has been found.
-		let nextFields = [{ x: a.x, y: a.y, step: 1 }];
+		// position "a". Stop when all paths are exhausted.
+		let nextFields = [{ x: goal.x, y: goal.y, step: 1 }];
 		let steps = 0;
 
 		while( nextFields.length ) {
 			let n = nextFields.splice( 0, 1 )[0];
-
-			if( n.x == b.x && n.y == b.y ) {
-				steps = n.step;
-				break;
-			}
 
 			nextFields = nextFields.concat(
 				markFieldsAround( n.x, n.y, n.step + 1 )
 			);
 		}
 
+		return m2;
+	}
+
+
+	/**
+	 * Find a path to the goal.
+	 * @param  {number} x
+	 * @param  {number} y
+	 * @return {?object[]}
+	 */
+	function findPathToGoal( x, y ) {
+		let map = g.mapPF;
+		let steps = map[x][y];
+
+		// If the value of the current position
+		// is not "0", there is a path.
 		if( !steps ) {
 			return null;
 		}
 
 		// There is at least 1 connection. Now gather the path.
-		// We start at the end, position "b".
-		let path = [b];
-		let x = b.x;
-		let y = b.y;
+		let path = [{ x, y }];
 
 		while( --steps ) {
 			let field = null;
 
 			if( x > 0 ) {
-				field = m2[x - 1][y];
+				field = map[x - 1][y];
 
 				if( field == steps ) {
 					path.push( { x: x - 1, y } );
@@ -180,7 +185,7 @@
 			}
 
 			if( x < g.mc - 1 ) {
-				field = m2[x + 1][y];
+				field = map[x + 1][y];
 
 				if( field == steps ) {
 					path.push( { x: x + 1, y } );
@@ -190,7 +195,7 @@
 			}
 
 			if( y > 0 ) {
-				field = m2[x][y - 1];
+				field = map[x][y - 1];
 
 				if( field == steps ) {
 					path.push( { x, y: y - 1 } );
@@ -200,7 +205,7 @@
 			}
 
 			if( y < g.mr - 1 ) {
-				field = m2[x][y + 1];
+				field = map[x][y + 1];
 
 				if( field == steps ) {
 					path.push( { x, y: y + 1 } );
@@ -261,7 +266,7 @@
 		// or no path to the goal exists.
 		if(
 			( x == goal.x && y == goal.y ) ||
-			!findPath( goal, { x, y } )
+			!findPathToGoal( x, y )
 		) {
 			return getPlayerStartPos();
 		}
@@ -281,8 +286,8 @@
 		isAtGoal: false,
 		rnd: Math.random,
 		k: kontra,
-		mc: 128, // number of map columns
-		mr: 128, // number of map rows
+		mc: 256, // number of map columns
+		mr: 256, // number of map rows
 		tw: 32, // default tile width (and height) [px]
 		ww: window.innerWidth, // window width
 		wh: window.innerHeight // window height
@@ -324,6 +329,8 @@
 	};
 
 	map[goal.y * g.mc + goal.x] = 8;
+
+	g.mapPF = generatePathMap( goal );
 
 
 
@@ -414,7 +421,7 @@
 	let lw = ~~( g.tw / 10 );
 	let ctx = g.k.context;
 
-	player.path = findPath( goal, player );
+	player.path = findPathToGoal( player.x, player.y );
 
 	let loop = g.k.gameLoop( {
 
