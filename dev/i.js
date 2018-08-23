@@ -372,9 +372,11 @@
 	// flip it around to cover the other sides.
 
 	let [fogCanvas, fogCtx] = getCanvasAndCtx( 'fog' );
+	let fogMapWidth = Math.ceil( g.ww / g.tw );
+	let fogMapHeight = Math.ceil( g.wh / g.tw );
 
-	for( let y = 0; y < g.mr; y++ ) {
-		for( let x = 0; x < g.mc; x++ ) {
+	for( let y = 0; y < fogMapHeight; y++ ) {
+		for( let x = 0; x < fogMapWidth; x++ ) {
 			// Euclidean distance from origin.
 			let de = Math.sqrt( x * x + y * y );
 
@@ -391,9 +393,6 @@
 	g.k.canvas.width = g.ww;
 	g.k.canvas.height = g.wh;
 	g.k.context.imageSmoothingEnabled = false;
-
-	let ground = g.k.sprite( { image: groundCanvas } );
-	let fog = g.k.sprite( { image: fogCanvas } );
 
 	let [pStartX, pStartY] = getPlayerStartPos();
 	let player = new Char( pStartX, pStartY );
@@ -453,7 +452,7 @@
 
 			// Draw the ground image but upscale it.
 			// The tiles in the original are only 1x1 px.
-			ctx.drawImage( ground.image, ...dest );
+			ctx.drawImage( groundCanvas, ...dest );
 
 
 			// Draw the characters.
@@ -496,7 +495,7 @@
 				fogOffsetX + pSX,
 				fogOffsetY + pSY
 			);
-			ctx.drawImage( fog.image, ...sourceCut, ...destCut );
+			ctx.drawImage( fogCanvas, ...sourceCut, ...destCut );
 			ctx.restore();
 
 			// Bottom left.
@@ -506,7 +505,7 @@
 				fogOffsetY + pSY
 			);
 			ctx.scale( -1, 1 );
-			ctx.drawImage( fog.image, ...dest );
+			ctx.drawImage( fogCanvas, ...dest );
 			ctx.restore();
 
 			// Top right.
@@ -516,7 +515,7 @@
 				fogOffsetY + pSY + g.tw
 			);
 			ctx.scale( 1, -1 );
-			ctx.drawImage( fog.image, ...dest );
+			ctx.drawImage( fogCanvas, ...dest );
 			ctx.restore();
 
 			// Top left.
@@ -526,7 +525,7 @@
 				fogOffsetY + pSY + g.tw
 			);
 			ctx.scale( -1, -1 );
-			ctx.drawImage( fog.image, ...sourceCut, ...destCut );
+			ctx.drawImage( fogCanvas, ...sourceCut, ...destCut );
 			ctx.restore();
 
 
