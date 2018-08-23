@@ -4,8 +4,10 @@
 	"esversion": 6,
 	"expr": true,
 	"globals": {
+		"Char": true,
 		"g": true,
-		"kontra": false
+		"kontra": false,
+		"PF": true
 	},
 	"node": true
 }
