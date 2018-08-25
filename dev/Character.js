@@ -15,7 +15,7 @@ class Char {
 		this.y = y;
 		this.path = null;
 
-		this.s = g.k.sprite( {
+		this.s = k.sprite( {
 			x: x * g.tw,
 			y: y * g.tw,
 			color: '#FFFFFF',

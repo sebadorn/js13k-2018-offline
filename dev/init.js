@@ -77,18 +77,19 @@
 	}
 
 
-	// Shortcuts.
-
+	// Global object to use as shortcut
+	// for some variables and functions.
 	window.g = {
 		isAtGoal: false,
+		isNavOn: false,
 		rnd: Math.random,
-		k: kontra,
-		mc: 256, // number of map columns
-		mr: 256, // number of map rows
+		mc: 128, // number of map columns
+		mr: 128, // number of map rows
 		tw: 32, // default tile width (and height) [px]
 		ww: window.innerWidth, // window width
 		wh: window.innerHeight // window height
 	};
+	window.k = kontra;
 
 	// Adjust tile size so the whole map
 	// is contained in the browser window.
@@ -184,22 +185,22 @@
 
 	// Initialize again, this time with the main canvas.
 
-	g.k.init();
-	g.k.canvas.width = g.ww;
-	g.k.canvas.height = g.wh;
-	g.k.context.imageSmoothingEnabled = false;
+	k.init();
+	k.canvas.width = g.ww;
+	k.canvas.height = g.wh;
+	k.context.imageSmoothingEnabled = false;
 
 	let [pStartX, pStartY] = getPlayerStartPos();
 	let player = new Char( pStartX, pStartY );
 
-	g.k.keys.bind( 'left', () => player.mv( -1, 0 ) );
-	g.k.keys.bind( 'right', () => player.mv( 1, 0 ) );
-	g.k.keys.bind( 'up', () => player.mv( 0, -1 ) );
-	g.k.keys.bind( 'down', () => player.mv( 0, 1 ) );
+	k.keys.bind( 'left', () => player.mv( -1, 0 ) );
+	k.keys.bind( 'right', () => player.mv( 1, 0 ) );
+	k.keys.bind( 'up', () => player.mv( 0, -1 ) );
+	k.keys.bind( 'down', () => player.mv( 0, 1 ) );
 
-	let pSX = pStartX * g.tw;
-	let pSY = pStartY * g.tw;
-	let fogOffsetY = -pSY;
+	k.keys.bind( 'o', () => {
+		g.isNavOn = !g.isNavOn;
+	} );
 
 	// Source and destination areas for fog images.
 	let sourceCut = [1, 1, g.mc - 1, g.mr - 1];
@@ -211,12 +212,12 @@
 	let centerLimitW = g.ww - g.mw;
 	let centerLimitH = g.wh - g.mh;
 	let twHalf = g.tw / 2;
-	let lw = ~~( g.tw / 10 );
-	let ctx = g.k.context;
+	let lw = ~~( g.tw / 4 );
+	let ctx = k.context;
 
 	player.path = PF.findGoal( player.x, player.y );
 
-	let loop = g.k.gameLoop( {
+	let loop = k.gameLoop( {
 
 		update: () => {
 			if( player.x == goal.x && player.y == goal.y && !g.isAtGoal ) {
@@ -228,20 +229,16 @@
 		},
 
 		render: () => {
-			ctx.save();
-
-
 			// Center on player, but stop at borders.
-
 			let cx = wwHalf - player.s.x;
 			cx = ( cx > 0 ) ? 0 : cx;
-			cx = ( cx < centerLimitW ) ? centerLimitW : cx;
+			cx = ( cx < centerLimitW ) ? centerLimitW : ~~cx;
 
 			let cy = whHalf - player.s.y;
 			cy = ( cy > 0 ) ? 0 : cy;
-			cy = ( cy < centerLimitH ) ? centerLimitH : cy;
+			cy = ( cy < centerLimitH ) ? centerLimitH : ~~cy;
 
-			ctx.translate( ~~cx, ~~cy );
+			ctx.setTransform( 1, 0, 0, 1, cx, cy );
 
 
 			// Draw the ground image but upscale it.
@@ -252,21 +249,46 @@
 			// Draw the characters.
 			player.s.render();
 
-			if( player.path ) {
+
+			// Draw the fog.
+			let x = cx + player.s.x;
+			let y = cy + player.s.y;
+			ctx.setTransform( 1, 0, 0, 1, x, y );
+
+			// Bottom right.
+			ctx.drawImage( fogCanvas, ...sourceCut, ...destCut );
+
+			// Bottom left.
+			ctx.setTransform( -1, 0, 0, 1, x + g.tw, y );
+			ctx.drawImage( fogCanvas, ...dest );
+
+			// Top right.
+			ctx.setTransform( 1, 0, 0, -1, x, y + g.tw );
+			ctx.drawImage( fogCanvas, ...dest );
+
+			// Top left.
+			ctx.setTransform( -1, 0, 0, -1, x + g.tw, y + g.tw );
+			ctx.drawImage( fogCanvas, ...sourceCut, ...destCut );
+
+
+			// Draw the navigation path.
+			ctx.setTransform( 1, 0, 0, 1, cx, cy );
+			let pp = player.path;
+
+			if( pp && pp.length > 2 && g.isNavOn ) {
 				ctx.beginPath();
 				ctx.strokeStyle = '#6BBEE1';
 				ctx.lineWidth = lw;
 				ctx.lineJoin = 'miter';
 
-				let pp = player.path;
-				let step = pp[0];
+				let step = pp[1];
 
 				ctx.moveTo(
 					step.x * g.tw + twHalf,
 					step.y * g.tw + twHalf
 				);
 
-				for( let i = 1; i < pp.length; i++ ) {
+				for( let i = 2; i < pp.length - 1; i++ ) {
 					step = pp[i];
 
 					ctx.lineTo(
@@ -277,53 +299,6 @@
 
 				ctx.stroke();
 			}
-
-			ctx.translate( player.s.x, player.s.y );
-
-
-			// Draw the fog.
-
-			// Bottom right.
-			ctx.save();
-			ctx.translate(
-				0,
-				fogOffsetY + pSY
-			);
-			ctx.drawImage( fogCanvas, ...sourceCut, ...destCut );
-			ctx.restore();
-
-			// Bottom left.
-			ctx.save();
-			ctx.translate(
-				g.tw,
-				fogOffsetY + pSY
-			);
-			ctx.scale( -1, 1 );
-			ctx.drawImage( fogCanvas, ...dest );
-			ctx.restore();
-
-			// Top right.
-			ctx.save();
-			ctx.translate(
-				0,
-				fogOffsetY + pSY + g.tw
-			);
-			ctx.scale( 1, -1 );
-			ctx.drawImage( fogCanvas, ...dest );
-			ctx.restore();
-
-			// Top left.
-			ctx.save();
-			ctx.translate(
-				g.tw,
-				fogOffsetY + pSY + g.tw
-			);
-			ctx.scale( -1, -1 );
-			ctx.drawImage( fogCanvas, ...sourceCut, ...destCut );
-			ctx.restore();
-
-
-			ctx.restore();
 		}
 
 	} );

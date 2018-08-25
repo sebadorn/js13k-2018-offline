@@ -6,6 +6,7 @@
 	"globals": {
 		"Char": true,
 		"g": true,
+		"k": true,
 		"kontra": false,
 		"PF": true
 	},
