@@ -81,10 +81,10 @@
 	// for some variables and functions.
 	window.g = {
 		isAtGoal: false,
-		isNavOn: false,
+		isOnline: false,
 		rnd: Math.random,
-		mc: 128, // number of map columns
-		mr: 128, // number of map rows
+		mc: 32, // number of map columns
+		mr: 32, // number of map rows
 		tw: 32, // default tile width (and height) [px]
 		ww: window.innerWidth, // window width
 		wh: window.innerHeight // window height
@@ -102,14 +102,11 @@
 
 
 	// Generate map.
-
 	let map = new Array( g.mc * g.mr );
-	map.fill( 2 );
-	g.map = map;
+	g.map = map.fill( 2 );
 
 
 	// Place stones. ~3% of map should be stone.
-
 	let numStones = map.length * 0.03;
 
 	while( numStones-- > 0 ) {
@@ -198,8 +195,9 @@
 	k.keys.bind( 'up', () => player.mv( 0, -1 ) );
 	k.keys.bind( 'down', () => player.mv( 0, 1 ) );
 
+	// Toggle online mode -> toggle navigation and monster behaviour
 	k.keys.bind( 'o', () => {
-		g.isNavOn = !g.isNavOn;
+		g.isOnline = !g.isOnline;
 	} );
 
 	// Source and destination areas for fog images.
@@ -215,17 +213,31 @@
 	let lw = ~~( g.tw / 4 );
 	let ctx = k.context;
 
+	// Place monsters. ~0.2% of map should be monsters.
+	let numMonsters = map.length * 0.002;
+	let monsters = [];
+
+	for( let i = 0; i < numMonsters; i++ ) {
+		let pos = getMonsterStartPos( player );
+		monsters[i] = new Char( ...pos, 'red' );
+	}
+
+
 	player.path = PF.findGoal( player.x, player.y );
 
 	let loop = k.gameLoop( {
 
-		update: () => {
+		update: ( dt ) => {
 			if( player.x == goal.x && player.y == goal.y && !g.isAtGoal ) {
 				g.isAtGoal = true;
 				window.alert( '!' ); // TODO:
 			}
 
 			player.s.update();
+
+			for( let i = 0; i < numMonsters; i++ ) {
+				monsters[i].updateMonster( dt, player );
+			}
 		},
 
 		render: () => {
@@ -248,6 +260,10 @@
 
 			// Draw the characters.
 			player.s.render();
+
+			for( let i = 0; i < numMonsters; i++ ) {
+				monsters[i].s.render();
+			}
 
 
 			// Draw the fog.
@@ -275,7 +291,7 @@
 			ctx.setTransform( 1, 0, 0, 1, cx, cy );
 			let pp = player.path;
 
-			if( pp && pp.length > 2 && g.isNavOn ) {
+			if( pp && pp.length > 2 && g.isOnline ) {
 				ctx.beginPath();
 				ctx.strokeStyle = '#6BBEE1';
 				ctx.lineWidth = lw;
@@ -304,5 +320,6 @@
 	} );
 
 	loop.start();
+
 
 } )();
