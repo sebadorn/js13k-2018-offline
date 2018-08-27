@@ -7,11 +7,10 @@
 
 	/**
 	 * Get a certain canvas element and its 2D context.
-	 * @param  {string} id
 	 * @return {Array} Canvas and 2D context.
 	 */
-	function getCanvasAndCtx( id ) {
-		let canvas = document.getElementById( id );
+	function getCanvasAndCtx() {
+		let canvas = document.createElement( 'canvas' );
 		canvas.width = g.mc;
 		canvas.height = g.mr;
 
@@ -83,13 +82,14 @@
 		isAtGoal: false,
 		isOnline: false,
 		rnd: Math.random,
-		mc: 32, // number of map columns
-		mr: 32, // number of map rows
+		mc: 64, // number of map columns
+		mr: 64, // number of map rows
 		tw: 32, // default tile width (and height) [px]
 		ww: window.innerWidth, // window width
 		wh: window.innerHeight // window height
 	};
 	window.k = kontra;
+
 
 	// Adjust tile size so the whole map
 	// is contained in the browser window.
@@ -173,7 +173,7 @@
 			// Euclidean distance from origin.
 			let de = Math.sqrt( x * x + y * y );
 
-			let f = 1 - Math.min( 3 / de, 1 );
+			let f = Math.min(1.15 - Math.min( 3 / de, 1 ), 1);
 			fogCtx.fillStyle = `rgba(0,0,0,${f})`;
 			fogCtx.fillRect( x, y, 1, 1 );
 		}
@@ -190,10 +190,10 @@
 	let [pStartX, pStartY] = getPlayerStartPos();
 	let player = new Char( pStartX, pStartY );
 
-	k.keys.bind( 'left', () => player.mv( -1, 0 ) );
-	k.keys.bind( 'right', () => player.mv( 1, 0 ) );
-	k.keys.bind( 'up', () => player.mv( 0, -1 ) );
-	k.keys.bind( 'down', () => player.mv( 0, 1 ) );
+	k.keys.bind( 'left', () => player.mv( -1, 0, Date.now() ) );
+	k.keys.bind( 'right', () => player.mv( 1, 0, Date.now() ) );
+	k.keys.bind( 'up', () => player.mv( 0, -1, Date.now() ) );
+	k.keys.bind( 'down', () => player.mv( 0, 1, Date.now() ) );
 
 	// Toggle online mode -> toggle navigation and monster behaviour
 	k.keys.bind( 'o', () => {
@@ -209,7 +209,7 @@
 	let whHalf = g.wh / 2;
 	let centerLimitW = g.ww - g.mw;
 	let centerLimitH = g.wh - g.mh;
-	let twHalf = g.tw / 2;
+	let twHalf = ~~( g.tw / 2 );
 	let lw = ~~( g.tw / 4 );
 	let ctx = k.context;
 
@@ -219,7 +219,7 @@
 
 	for( let i = 0; i < numMonsters; i++ ) {
 		let pos = getMonsterStartPos( player );
-		monsters[i] = new Char( ...pos, 'red' );
+		monsters[i] = new Char( ...pos, 'red', true );
 	}
 
 
@@ -233,7 +233,7 @@
 				window.alert( '!' ); // TODO:
 			}
 
-			player.s.update();
+			// player.update( dt );
 
 			for( let i = 0; i < numMonsters; i++ ) {
 				monsters[i].updateMonster( dt, player );
@@ -288,10 +288,11 @@
 
 
 			// Draw the navigation path.
-			ctx.setTransform( 1, 0, 0, 1, cx, cy );
 			let pp = player.path;
 
 			if( pp && pp.length > 2 && g.isOnline ) {
+				ctx.setTransform( 1, 0, 0, 1, cx + twHalf, cy + twHalf );
+
 				ctx.beginPath();
 				ctx.strokeStyle = '#6BBEE1';
 				ctx.lineWidth = lw;
@@ -300,16 +301,16 @@
 				let step = pp[1];
 
 				ctx.moveTo(
-					step.x * g.tw + twHalf,
-					step.y * g.tw + twHalf
+					step.x * g.tw,
+					step.y * g.tw
 				);
 
 				for( let i = 2; i < pp.length - 1; i++ ) {
 					step = pp[i];
 
 					ctx.lineTo(
-						step.x * g.tw + twHalf,
-						step.y * g.tw + twHalf
+						step.x * g.tw,
+						step.y * g.tw
 					);
 				}
 

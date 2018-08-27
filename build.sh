@@ -14,16 +14,16 @@ cp 'dev/index.html' 'build/index.html'
 cp dev/*.js 'build/'
 
 cd 'build' > '/dev/null'
-sed -i'' 's/^"use strict";//' 'Character.js'
+sed -i'' 's/^"use strict";//' 'Char.js'
 sed -i'' 's/^"use strict";//' 'PathFinding.js'
 sed -i'' 's/^"use strict";//' 'init.js'
 mv 'kontra.js' 'k.js'
 
-$TERSER 'Character.js' 'PathFinding.js' 'init.js' \
+$TERSER 'Char.js' 'PathFinding.js' 'init.js' \
 	--ecma 6 --compress --mangle \
 	-o 'i.js'
 
-rm 'Character.js' 'PathFinding.js' 'init.js'
+rm 'Char.js' 'PathFinding.js' 'init.js'
 
 zip -q -r offline.zip ./*
 
