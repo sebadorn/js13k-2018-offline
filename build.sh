@@ -17,13 +17,12 @@ cd 'build' > '/dev/null'
 sed -i'' 's/^"use strict";//' 'Char.js'
 sed -i'' 's/^"use strict";//' 'PathFinding.js'
 sed -i'' 's/^"use strict";//' 'init.js'
-mv 'kontra.js' 'k.js'
 
-$TERSER 'Char.js' 'PathFinding.js' 'init.js' \
+$TERSER 'kontra.js' 'Char.js' 'PathFinding.js' 'init.js' \
 	--ecma 6 --compress --mangle \
 	-o 'i.js'
 
-rm 'Char.js' 'PathFinding.js' 'init.js'
+rm 'kontra.js' 'Char.js' 'PathFinding.js' 'init.js'
 
 zip -q -r offline.zip ./*
 
