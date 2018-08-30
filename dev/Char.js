@@ -37,6 +37,10 @@ class Char {
 	 * @param ?{number} ts - Timestamp.
 	 */
 	mv( x, y, ts ) {
+		if( !g.started ) {
+			return;
+		}
+
 		// Slow down movement, because holding down
 		// the arrow key repeats the event too fast.
 		if( ts && ts - this._lastMV < 100 ) {

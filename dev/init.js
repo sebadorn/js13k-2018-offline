@@ -81,6 +81,7 @@
 	window.g = {
 		isAtGoal: false,
 		isOnline: false,
+		started: false,
 		rnd: Math.random,
 		mc: 64, // number of map columns
 		mr: 64, // number of map rows
@@ -180,8 +181,7 @@
 	}
 
 
-	// Initialize again, this time with the main canvas.
-
+	// Initialize the main canvas.
 	k.init();
 	k.canvas.width = g.ww;
 	k.canvas.height = g.wh;
@@ -197,7 +197,9 @@
 
 	// Toggle online mode -> toggle navigation and monster behaviour
 	k.keys.bind( 'o', () => {
-		g.isOnline = !g.isOnline;
+		if( g.started ) {
+			g.isOnline = !g.isOnline;
+		}
 	} );
 
 	// Source and destination areas for fog images.
@@ -320,7 +322,17 @@
 
 	} );
 
-	loop.start();
+	// Render once for background.
+	loop.render();
+
+	k.keys.bind( 's', () => {
+		k.keys.unbind( 's' );
+
+		document.getElementById( 't' ).style.display = 'none';
+
+		loop.start();
+		g.started = true;
+	} );
 
 
 } )();
