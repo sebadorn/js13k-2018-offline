@@ -30,8 +30,11 @@
 	function getMonsterStartPos( player, retry = 0 ) {
 		let x = ~~( g.rnd() * g.mc );
 		let y = ~~( g.rnd() * g.mr );
+		let dtX = Math.abs( player.x - x );
+		let dtY = Math.abs( player.y - y );
 
-		if( x == player.x && y == player.y ) {
+		// Minimum distance from player at spawn time.
+		if( dtX < 10 && dtY < 10 ) {
 			if( retry > 5 ) {
 				return null;
 			}
@@ -83,12 +86,15 @@
 		isOnline: false,
 		started: false,
 		rnd: Math.random,
-		mc: 64, // number of map columns
-		mr: 64, // number of map rows
 		tw: 32, // default tile width (and height) [px]
 		ww: window.innerWidth, // window width
 		wh: window.innerHeight // window height
 	};
+
+	// Random map size.
+	g.mc = 128 + ~~( g.rnd() * 128 ); // number of map columns
+	g.mr = 128 + ~~( g.rnd() * 128 ); // number of map rows
+
 	window.k = kontra;
 
 
@@ -214,6 +220,7 @@
 	let twHalf = ~~( g.tw / 2 );
 	let lw = ~~( g.tw / 4 );
 	let ctx = k.context;
+	let pathColor = '#6BBEE1';
 
 	// Place monsters. ~0.2% of map should be monsters.
 	let numMonsters = map.length * 0.002;
@@ -221,8 +228,13 @@
 
 	for( let i = 0; i < numMonsters; i++ ) {
 		let pos = getMonsterStartPos( player );
-		monsters[i] = new Char( ...pos, 'red', true );
+
+		if( pos ) {
+			monsters.push( new Char( ...pos, 'red', true ) );
+		}
 	}
+
+	numMonsters = monsters.length;
 
 
 	player.path = PF.findGoal( player.x, player.y );
@@ -232,7 +244,10 @@
 		update: ( dt ) => {
 			if( player.x == goal.x && player.y == goal.y && !g.isAtGoal ) {
 				g.isAtGoal = true;
-				window.alert( '!' ); // TODO:
+				loop.stop();
+				document.getElementById( 'w' ).style.display = 'flex';
+
+				return;
 			}
 
 			// player.update( dt );
@@ -291,12 +306,13 @@
 
 			// Draw the navigation path.
 			let pp = player.path;
+			let ppLen = pp && pp.length;
 
-			if( pp && pp.length > 2 && g.isOnline ) {
+			if( pp && ppLen > 2 && g.isOnline ) {
 				ctx.setTransform( 1, 0, 0, 1, cx + twHalf, cy + twHalf );
 
 				ctx.beginPath();
-				ctx.strokeStyle = '#6BBEE1';
+				ctx.strokeStyle = pathColor;
 				ctx.lineWidth = lw;
 				ctx.lineJoin = 'miter';
 
@@ -307,7 +323,7 @@
 					step.y * g.tw
 				);
 
-				for( let i = 2; i < pp.length - 1; i++ ) {
+				for( let i = 2; i < ppLen; i++ ) {
 					step = pp[i];
 
 					ctx.lineTo(
@@ -317,6 +333,12 @@
 				}
 
 				ctx.stroke();
+				ctx.closePath();
+
+				// Little marker on the final tile.
+				step = pp[ppLen - 1];
+				ctx.fillStyle = pathColor;
+				ctx.fillRect( step.x * g.tw - lw, step.y * g.tw - lw, lw * 2, lw * 2 );
 			}
 		}
 
@@ -326,12 +348,13 @@
 	loop.render();
 
 	k.keys.bind( 's', () => {
-		k.keys.unbind( 's' );
+		if( g.started ) {
+			return;
+		}
 
-		document.getElementById( 't' ).style.display = 'none';
-
-		loop.start();
 		g.started = true;
+		document.getElementById( 't' ).style.display = 'none';
+		loop.start();
 	} );
 
 

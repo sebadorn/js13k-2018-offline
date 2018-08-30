@@ -120,6 +120,7 @@ class Char {
 
 		let x = 0;
 		let y = 0;
+		let goRandom = true;
 
 		// Target the player either because they
 		// are online or because of closeness.
@@ -130,14 +131,22 @@ class Char {
 			else {
 				y = ( dtY < 0 ) ? 1 : -1;
 			}
+
+			// Cannot go there. Take a random step instead
+			// and hope it leaves the blocked path.
+			let t = g.map[( this.y + y ) * g.mc + this.x + x];
+			goRandom = t & 4;
 		}
+
 		// Aimless, random movement.
-		else {
+		if (goRandom) {
 			if( g.rnd() < 0.5 ) {
-				x += Math.round( -1 + g.rnd() * 2 );
+				x = Math.round( -1 + g.rnd() * 2 );
+				y = 0;
 			}
 			else {
-				y += Math.round( -1 + g.rnd() * 2 );
+				x = 0;
+				y = Math.round( -1 + g.rnd() * 2 );
 			}
 		}
 
