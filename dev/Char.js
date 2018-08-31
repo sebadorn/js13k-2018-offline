@@ -43,7 +43,7 @@ class Char {
 
 		// Slow down movement, because holding down
 		// the arrow key repeats the event too fast.
-		if( ts && ts - this._lastMV < 100 ) {
+		if( ts && ts - this._lastMV < 150 ) {
 			return;
 		}
 

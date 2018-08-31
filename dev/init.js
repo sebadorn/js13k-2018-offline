@@ -218,7 +218,7 @@
 	let centerLimitW = g.ww - g.mw;
 	let centerLimitH = g.wh - g.mh;
 	let twHalf = ~~( g.tw / 2 );
-	let lw = ~~( g.tw / 4 );
+	let lineWidth = ~~( g.tw / 4 );
 	let ctx = k.context;
 	let pathColor = '#6BBEE1';
 
@@ -313,7 +313,7 @@
 
 				ctx.beginPath();
 				ctx.strokeStyle = pathColor;
-				ctx.lineWidth = lw;
+				ctx.lineWidth = lineWidth;
 				ctx.lineJoin = 'miter';
 
 				let step = pp[1];
@@ -338,7 +338,7 @@
 				// Little marker on the final tile.
 				step = pp[ppLen - 1];
 				ctx.fillStyle = pathColor;
-				ctx.fillRect( step.x * g.tw - lw, step.y * g.tw - lw, lw * 2, lw * 2 );
+				ctx.fillRect( step.x * g.tw - lineWidth, step.y * g.tw - lineWidth, lineWidth * 2, lineWidth * 2 );
 			}
 		}
 
