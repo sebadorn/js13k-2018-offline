@@ -86,7 +86,7 @@
 		isOnline: false,
 		started: false,
 		rnd: Math.random,
-		tw: 32, // default tile width (and height) [px]
+		tw: 48, // default tile width (and height) [px]
 		ww: window.innerWidth, // window width
 		wh: window.innerHeight // window height
 	};
@@ -180,7 +180,7 @@
 			// Euclidean distance from origin.
 			let de = Math.sqrt( x * x + y * y );
 
-			let f = Math.min(1.15 - Math.min( 3 / de, 1 ), 1);
+			let f = ( de < 2 ) ? 0 : Math.min( 1.15 - Math.min( 3 / de, 1 ), 1 );
 			fogCtx.fillStyle = `rgba(0,0,0,${f})`;
 			fogCtx.fillRect( x, y, 1, 1 );
 		}
@@ -230,12 +230,13 @@
 		let pos = getMonsterStartPos( player );
 
 		if( pos ) {
-			monsters.push( new Char( ...pos, 'red', true ) );
+			monsters.push( new Char( ...pos, '#C20215', true ) );
 		}
 	}
 
 	numMonsters = monsters.length;
 
+	let playerImg = document.getElementById( 'p' );
 
 	player.path = PF.findGoal( player.x, player.y );
 
@@ -259,11 +260,11 @@
 
 		render: () => {
 			// Center on player, but stop at borders.
-			let cx = wwHalf - player.s.x;
+			let cx = wwHalf - player.x * g.tw;
 			cx = ( cx > 0 ) ? 0 : cx;
 			cx = ( cx < centerLimitW ) ? centerLimitW : ~~cx;
 
-			let cy = whHalf - player.s.y;
+			let cy = whHalf - player.y * g.tw;
 			cy = ( cy > 0 ) ? 0 : cy;
 			cy = ( cy < centerLimitH ) ? centerLimitH : ~~cy;
 
@@ -275,17 +276,22 @@
 			ctx.drawImage( groundCanvas, ...dest );
 
 
-			// Draw the characters.
-			player.s.render();
-
+			// Monsters.
 			for( let i = 0; i < numMonsters; i++ ) {
-				monsters[i].s.render();
+				let m = monsters[i];
+				ctx.fillStyle = m.color;
+				ctx.fillRect( m.x * g.tw, m.y * g.tw, g.tw, g.tw );
 			}
 
 
+			// Player.
+			let x = cx + player.x * g.tw;
+			let y = cy + player.y * g.tw;
+			ctx.setTransform( 1, 0, 0, 1, x, y );
+			ctx.drawImage( playerImg, ...player.getImgCut(), 0, 0, g.tw, g.tw );
+
+
 			// Draw the fog.
-			let x = cx + player.s.x;
-			let y = cy + player.s.y;
 			ctx.setTransform( 1, 0, 0, 1, x, y );
 
 			// Bottom right.

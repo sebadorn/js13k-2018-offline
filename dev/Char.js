@@ -7,9 +7,10 @@ class Char {
 	/**
 	 * A character which can move around.
 	 * @constructor
-	 * @param {number} x     - X index on map.
-	 * @param {number} y     - Y index on map.
-	 * @param {string} color
+	 * @param {number}   x                  - X index on map.
+	 * @param {number}   y                  - Y index on map.
+	 * @param {string}   color
+	 * @param {boolean} [isMonster = false]
 	 */
 	constructor( x, y, color = '#FFF', isMonster = false ) {
 		this._last = 0; // Last update.
@@ -19,14 +20,40 @@ class Char {
 		this.path = null;
 		this.monster = isMonster;
 		this._progress = 0;
+		this.color = color;
 
-		this.s = k.sprite( {
-			x: x * g.tw,
-			y: y * g.tw,
-			color: color,
-			width: g.tw,
-			height: g.tw
-		} );
+		// Direction of movement.
+		// 1: up
+		// 2: right
+		// 3: down
+		// 4: left
+		this.dir = 3;
+	}
+
+
+	/**
+	 * Get the cut offset for the source image.
+	 * @return {number[]}
+	 */
+	getImgCut() {
+		let t = [0, 0, 16, 16];
+
+		if( this.dir == 1 ) {
+			t[0] = 16;
+		}
+		else if( this.dir == 2 ) {
+			t[1] = 16;
+		}
+		else if( this.dir == 4 ) {
+			t[0] = 16;
+			t[1] = 16;
+		}
+
+		if( g.isOnline ) {
+			t[0] += 32;
+		}
+
+		return t;
 	}
 
 
@@ -43,7 +70,7 @@ class Char {
 
 		// Slow down movement, because holding down
 		// the arrow key repeats the event too fast.
-		if( ts && ts - this._lastMV < 150 ) {
+		if( ts && ts - this._lastMV < 100 ) {
 			return;
 		}
 
@@ -74,8 +101,12 @@ class Char {
 			this.path = PF.findGoal( this.x, this.y );
 		}
 
-		this.s.x = this.x * g.tw;
-		this.s.y = this.y * g.tw;
+		if( y ) {
+			this.dir = ( y < 0 ) ? 1 : 3;
+		}
+		else {
+			this.dir = ( x < 0 ) ? 4 : 2;
+		}
 	}
 
 
@@ -112,7 +143,7 @@ class Char {
 		let rhythm = targetPlayer ? 0.3 : 1;
 
 		// Movement rhythm.
-		if( this._last < rhythm ) {
+		if( !playerDistance || this._last < rhythm ) {
 			return;
 		}
 
@@ -139,7 +170,7 @@ class Char {
 		}
 
 		// Aimless, random movement.
-		if (goRandom) {
+		if( goRandom ) {
 			if( g.rnd() < 0.5 ) {
 				x = Math.round( -1 + g.rnd() * 2 );
 				y = 0;

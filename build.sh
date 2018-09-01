@@ -12,6 +12,7 @@ mkdir 'build'
 
 cp 'dev/index-dev.html' 'build/'
 cp dev/*.js 'build/'
+cp dev/*.png 'build/'
 
 cd 'build' > '/dev/null'
 
