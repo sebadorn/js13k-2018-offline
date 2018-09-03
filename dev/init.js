@@ -237,6 +237,7 @@
 	numMonsters = monsters.length;
 
 	let playerImg = document.getElementById( 'p' );
+	let monsterImg = document.getElementById( 'm' );
 
 	player.path = PF.findGoal( player.x, player.y );
 
@@ -250,8 +251,6 @@
 
 				return;
 			}
-
-			// player.update( dt );
 
 			for( let i = 0; i < numMonsters; i++ ) {
 				monsters[i].updateMonster( dt, player );
@@ -279,8 +278,11 @@
 			// Monsters.
 			for( let i = 0; i < numMonsters; i++ ) {
 				let m = monsters[i];
-				ctx.fillStyle = m.color;
-				ctx.fillRect( m.x * g.tw, m.y * g.tw, g.tw, g.tw );
+				ctx.drawImage(
+					monsterImg, ...m.getImgCut(),
+					m.x * g.tw, m.y * g.tw,
+					g.tw, g.tw
+				);
 			}
 
 

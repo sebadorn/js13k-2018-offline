@@ -9,10 +9,11 @@ if [ -d 'build' ]; then
 fi
 
 mkdir 'build'
+mkdir 'build/assets'
 
 cp 'dev/index-dev.html' 'build/'
 cp dev/*.js 'build/'
-cp dev/*.png 'build/'
+cp dev/assets/*.png 'build/assets/'
 
 cd 'build' > '/dev/null'
 

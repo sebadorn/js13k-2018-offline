@@ -49,7 +49,7 @@ class Char {
 			t[1] = 16;
 		}
 
-		if( g.isOnline ) {
+		if( !this.monster && g.isOnline ) {
 			t[0] += 32;
 		}
 
