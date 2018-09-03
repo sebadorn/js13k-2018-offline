@@ -31,6 +31,8 @@ $TERSER 'kontra.js' 'Char.js' 'PathFinding.js' 'init.js' \
 	--ecma 6 --compress --mangle \
 	-o 'i.js'
 
+pngquant --quality=100 assets/*.png --ext .png -f
+
 rm 'index-dev.html'
 rm 'kontra.js' 'Char.js' 'PathFinding.js' 'init.js'
 

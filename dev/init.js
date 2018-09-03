@@ -28,8 +28,8 @@
 	 * @return {number[]}
 	 */
 	function getMonsterStartPos( player, retry = 0 ) {
-		let x = ~~( g.rnd() * g.mc );
-		let y = ~~( g.rnd() * g.mr );
+		let x = 2 + ~~( g.rnd() * ( g.mc - 4 ) );
+		let y = 2 + ~~( g.rnd() * ( g.mr - 4 ) );
 		let dtX = Math.abs( player.x - x );
 		let dtY = Math.abs( player.y - y );
 
@@ -121,19 +121,6 @@
 	}
 
 
-	// Place the goal.
-	// Make sure it has some minimum
-	// margin to the map borders.
-
-	let goal = {
-		x: 2 + ~~( g.rnd() * ( g.mc - 4 ) ),
-		y: 2 + ~~( g.rnd() * ( g.mr - 4 ) )
-	};
-
-	map[goal.y * g.mc + goal.x] = 8;
-	PF.generateMap( goal.x, goal.y );
-
-
 	// Generate static ground. For performance
 	// reasons render all the tiles only once
 	// and create a new image, which is then used
@@ -151,6 +138,12 @@
 		// Stone.
 		if( v & 4 ) {
 			c = '#282828';
+		}
+		// Water border.
+		else if( !x || !y || x == g.mc - 1 || y == g.mr - 1 ) {
+			let blue = 140 + g.rnd() * 60;
+			c = `rgb(30,90,${~~blue})`;
+			map[i] = 16;
 		}
 		// Goal.
 		else if( v & 8 ) {
@@ -185,6 +178,26 @@
 			fogCtx.fillRect( x, y, 1, 1 );
 		}
 	}
+
+
+	// Place the goal.
+	// Make sure it has some minimum
+	// margin to the map borders.
+
+	let goal = {
+		x: 4 + ~~( g.rnd() * ( g.mc - 8 ) ),
+		y: 4 + ~~( g.rnd() * ( g.mr - 8 ) )
+	};
+
+	// Reduce risk of being walled in by
+	// turning the fields around into grass.
+	map[( goal.y - 1 ) * g.mc + goal.x] = 2;
+	map[( goal.y + 1 ) * g.mc + goal.x] = 2;
+	map[goal.y * g.mc + goal.x - 1] = 2;
+	map[goal.y * g.mc + goal.x + 1] = 2;
+
+	map[goal.y * g.mc + goal.x] = 8;
+	PF.generateMap( goal.x, goal.y );
 
 
 	// Initialize the main canvas.

@@ -89,10 +89,10 @@ class Char {
 		// Not passable terrain or outside bounds.
 		if(
 			t & 4 ||
-			this.x < 0 ||
-			this.y < 0 ||
-			this.x >= g.mc ||
-			this.y >= g.mr
+			this.x < 1 ||
+			this.y < 1 ||
+			this.x >= g.mc - 1 ||
+			this.y >= g.mr - 1
 		) {
 			this.x -= x;
 			this.y -= y;
