@@ -120,6 +120,23 @@
 		map[~~( g.rnd() * map.length )] = 4;
 	}
 
+	// Place the goal.
+	// Make sure it has some minimum
+	// margin to the map borders.
+
+	let goal = {
+		x: 4 + ~~( g.rnd() * ( g.mc - 8 ) ),
+		y: 4 + ~~( g.rnd() * ( g.mr - 8 ) )
+	};
+	map[goal.y * g.mc + goal.x] = 8;
+
+	// Reduce risk of being walled in by
+	// turning the fields around into grass.
+	map[( goal.y - 1 ) * g.mc + goal.x] = 2;
+	map[( goal.y + 1 ) * g.mc + goal.x] = 2;
+	map[goal.y * g.mc + goal.x - 1] = 2;
+	map[goal.y * g.mc + goal.x + 1] = 2;
+
 
 	// Generate static ground. For performance
 	// reasons render all the tiles only once
@@ -147,7 +164,7 @@
 		}
 		// Goal.
 		else if( v & 8 ) {
-			c = '#29BEB2';
+			c = '#555555';
 		}
 
 		groundCtx.fillStyle = c;
@@ -180,23 +197,8 @@
 	}
 
 
-	// Place the goal.
-	// Make sure it has some minimum
-	// margin to the map borders.
-
-	let goal = {
-		x: 4 + ~~( g.rnd() * ( g.mc - 8 ) ),
-		y: 4 + ~~( g.rnd() * ( g.mr - 8 ) )
-	};
-
-	// Reduce risk of being walled in by
-	// turning the fields around into grass.
-	map[( goal.y - 1 ) * g.mc + goal.x] = 2;
-	map[( goal.y + 1 ) * g.mc + goal.x] = 2;
-	map[goal.y * g.mc + goal.x - 1] = 2;
-	map[goal.y * g.mc + goal.x + 1] = 2;
-
-	map[goal.y * g.mc + goal.x] = 8;
+	// Generate the path finding map
+	// with the goal as static target.
 	PF.generateMap( goal.x, goal.y );
 
 
@@ -251,6 +253,7 @@
 
 	let playerImg = document.getElementById( 'p' );
 	let monsterImg = document.getElementById( 'm' );
+	let goalImg = document.getElementById( 'b' );
 
 	player.path = PF.findGoal( player.x, player.y );
 
@@ -260,6 +263,7 @@
 			if( player.x == goal.x && player.y == goal.y && !g.isAtGoal ) {
 				g.isAtGoal = true;
 				loop.stop();
+				loop.render(); // One last render pass to hide the player.
 				document.getElementById( 'w' ).style.display = 'flex';
 
 				return;
@@ -288,6 +292,9 @@
 			ctx.drawImage( groundCanvas, ...dest );
 
 
+			// Goal.
+			ctx.drawImage( goalImg, goal.x * g.tw, goal.y * g.tw, g.tw, g.tw );
+
 			// Monsters.
 			for( let i = 0; i < numMonsters; i++ ) {
 				let m = monsters[i];
@@ -298,16 +305,17 @@
 				);
 			}
 
-
 			// Player.
 			let x = cx + player.x * g.tw;
 			let y = cy + player.y * g.tw;
 			ctx.setTransform( 1, 0, 0, 1, x, y );
-			ctx.drawImage( playerImg, ...player.getImgCut(), 0, 0, g.tw, g.tw );
+
+			if( !g.isAtGoal ) {
+				ctx.drawImage( playerImg, ...player.getImgCut(), 0, 0, g.tw, g.tw );
+			}
 
 
 			// Draw the fog.
-			ctx.setTransform( 1, 0, 0, 1, x, y );
 
 			// Bottom right.
 			ctx.drawImage( fogCanvas, ...sourceCut, ...destCut );
@@ -359,7 +367,12 @@
 				// Little marker on the final tile.
 				step = pp[ppLen - 1];
 				ctx.fillStyle = pathColor;
-				ctx.fillRect( step.x * g.tw - lineWidth, step.y * g.tw - lineWidth, lineWidth * 2, lineWidth * 2 );
+				ctx.fillRect(
+					step.x * g.tw - lineWidth,
+					step.y * g.tw - lineWidth,
+					lineWidth * 2,
+					lineWidth * 2
+				);
 			}
 		}
 
