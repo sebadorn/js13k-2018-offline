@@ -11,4 +11,4 @@ https://github.com/sebadorn/js13k-2018-offline
 
 ## 3rd party libraries
 
-* [Kontra.js](https://straker.github.io/kontra/) – Core + Game Loop + Keyboard
+* [Kontra.js](https://straker.github.io/kontra/) – Core + Game Loop

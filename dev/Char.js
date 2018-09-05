@@ -9,18 +9,23 @@ class Char {
 	 * @constructor
 	 * @param {number}   x                  - X index on map.
 	 * @param {number}   y                  - Y index on map.
-	 * @param {string}   color
 	 * @param {boolean} [isMonster = false]
 	 */
-	constructor( x, y, color = '#FFF', isMonster = false ) {
+	constructor( x, y, isMonster = false ) {
 		this._last = 0; // Last update.
 
 		this.x = x;
 		this.y = y;
+
+		this.x_old = x;
+		this.y_old = y;
+
+		this.x_px = this.x * g.tw;
+		this.y_px = this.y * g.tw;
+
 		this.path = null;
 		this.monster = isMonster;
 		this._progress = 0;
-		this.color = color;
 
 		// Direction of movement.
 		// 1: up
@@ -70,16 +75,15 @@ class Char {
 
 		// Slow down movement, because holding down
 		// the arrow key repeats the event too fast.
-		if( ts && ts - this._lastMV < 100 ) {
+		if( ts && ts - this._lastMV < 120 ) {
 			return;
 		}
 
+		this._lastMV = ts;
 		this._progress = 0;
 
-		this._lastMV = ts;
-
-		this._xOld = this.x;
-		this._yOld = this.y;
+		this.x_old = this.x;
+		this.y_old = this.y;
 
 		this.x += x;
 		this.y += y;
@@ -110,18 +114,22 @@ class Char {
 	}
 
 
-	// update( dt ) {
-	// 	this._progress += 0.2;
+	/**
+	 * Update position progress.
+	 * @param {number} dt
+	 */
+	update( dt ) {
+		this._progress += 0.1;
 
-	// 	if( this._progress > 1 ) {
-	// 		this._progress = 1;
-	// 	}
+		if( this._progress > 1 ) {
+			this._progress = 1;
+		}
 
-	// 	let p = this._progress;
+		let p = this._progress;
 
-	// 	this.s.x = ( p * this.x + ( 1 - p ) * this._xOld ) * g.tw;
-	// 	this.s.y = ( p * this.y + ( 1 - p ) * this._yOld ) * g.tw;
-	// }
+		this.x_px = ( p * this.x + ( 1 - p ) * this.x_old ) * g.tw;
+		this.y_px = ( p * this.y + ( 1 - p ) * this.y_old ) * g.tw;
+	}
 
 
 	/**

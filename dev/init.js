@@ -2,7 +2,7 @@
 /* jshint -W018 */
 
 
-( () => {
+window.addEventListener( 'load', () => {
 
 
 	/**
@@ -113,8 +113,8 @@
 	g.map = map.fill( 2 );
 
 
-	// Place stones. ~3% of map should be stone.
-	let numStones = map.length * 0.03;
+	// Place stones. ~4% of map should be stone.
+	let numStones = map.length * 0.04;
 
 	while( numStones-- > 0 ) {
 		map[~~( g.rnd() * map.length )] = 4;
@@ -211,13 +211,10 @@
 	let [pStartX, pStartY] = getPlayerStartPos();
 	let player = new Char( pStartX, pStartY );
 
-	k.keys.bind( 'left', () => player.mv( -1, 0, Date.now() ) );
-	k.keys.bind( 'right', () => player.mv( 1, 0, Date.now() ) );
-	k.keys.bind( 'up', () => player.mv( 0, -1, Date.now() ) );
-	k.keys.bind( 'down', () => player.mv( 0, 1, Date.now() ) );
+	Keys.init();
 
-	// Toggle online mode -> toggle navigation and monster behaviour
-	k.keys.bind( 'o', () => {
+	// Toggle [o]nline mode -> toggle navigation and monster behaviour
+	Keys.on( 79, () => {
 		if( g.started ) {
 			g.isOnline = !g.isOnline;
 		}
@@ -245,7 +242,7 @@
 		let pos = getMonsterStartPos( player );
 
 		if( pos ) {
-			monsters.push( new Char( ...pos, '#C20215', true ) );
+			monsters.push( new Char( ...pos, true ) );
 		}
 	}
 
@@ -269,6 +266,25 @@
 				return;
 			}
 
+			// Down.
+			if( Keys.isPressed( 40 ) ) {
+				player.mv( 0, 1, Date.now() );
+			}
+			// Left.
+			else if( Keys.isPressed( 37 ) ) {
+				player.mv( -1, 0, Date.now() );
+			}
+			// Right.
+			else if( Keys.isPressed( 39 ) ) {
+				player.mv( 1, 0, Date.now() );
+			}
+			// Up.
+			else if( Keys.isPressed( 38 ) ) {
+				player.mv( 0, -1, Date.now() );
+			}
+
+			player.update( dt );
+
 			for( let i = 0; i < numMonsters; i++ ) {
 				monsters[i].updateMonster( dt, player );
 			}
@@ -276,11 +292,11 @@
 
 		render: () => {
 			// Center on player, but stop at borders.
-			let cx = wwHalf - player.x * g.tw;
+			let cx = wwHalf - player.x_px;
 			cx = ( cx > 0 ) ? 0 : cx;
 			cx = ( cx < centerLimitW ) ? centerLimitW : ~~cx;
 
-			let cy = whHalf - player.y * g.tw;
+			let cy = whHalf - player.y_px;
 			cy = ( cy > 0 ) ? 0 : cy;
 			cy = ( cy < centerLimitH ) ? centerLimitH : ~~cy;
 
@@ -306,8 +322,8 @@
 			}
 
 			// Player.
-			let x = cx + player.x * g.tw;
-			let y = cy + player.y * g.tw;
+			let x = cx + player.x_px;
+			let y = cy + player.y_px;
 			ctx.setTransform( 1, 0, 0, 1, x, y );
 
 			if( !g.isAtGoal ) {
@@ -381,7 +397,8 @@
 	// Render once for background.
 	loop.render();
 
-	k.keys.bind( 's', () => {
+	// [s]tart
+	Keys.on( 83, () => {
 		if( g.started ) {
 			return;
 		}
@@ -392,4 +409,4 @@
 	} );
 
 
-} )();
+} );
