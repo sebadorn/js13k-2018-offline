@@ -316,8 +316,7 @@ window.addEventListener( 'load', () => {
 				let m = monsters[i];
 				ctx.drawImage(
 					monsterImg, ...m.getImgCut(),
-					m.x * g.tw, m.y * g.tw,
-					g.tw, g.tw
+					m.x_px, m.y_px, g.tw, g.tw
 				);
 			}
 

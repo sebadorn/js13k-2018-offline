@@ -26,6 +26,7 @@ class Char {
 		this.path = null;
 		this.monster = isMonster;
 		this._progress = 0;
+		this._speed = isMonster ? 0.3 : 0.12;
 
 		// Direction of movement.
 		// 1: up
@@ -75,7 +76,7 @@ class Char {
 
 		// Slow down movement, because holding down
 		// the arrow key repeats the event too fast.
-		if( ts && ts - this._lastMV < 120 ) {
+		if( ts && ts - this._lastMV < this._speed * 1000 ) {
 			return;
 		}
 
@@ -119,7 +120,7 @@ class Char {
 	 * @param {number} dt
 	 */
 	update( dt ) {
-		this._progress += 0.1;
+		this._progress += dt / this._speed;
 
 		if( this._progress > 1 ) {
 			this._progress = 1;
@@ -138,6 +139,8 @@ class Char {
 	 * @param {Char}   player
 	 */
 	updateMonster( dt, player ) {
+		this.update( dt );
+
 		this._last += dt;
 
 		let dtX = this.x - player.x;
@@ -148,7 +151,7 @@ class Char {
 
 		// They are fast once they hunt, but
 		// have to be slower than the player.
-		let rhythm = targetPlayer ? 0.3 : 1;
+		let rhythm = targetPlayer ? this._speed : 1;
 
 		// Movement rhythm.
 		if( !playerDistance || this._last < rhythm ) {
