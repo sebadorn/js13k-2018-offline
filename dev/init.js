@@ -86,6 +86,10 @@ window.addEventListener( 'load', () => {
 		isOnline: false,
 		started: false,
 		rnd: Math.random,
+		rndSeed: ( seed ) => {
+		    let x = Math.sin( seed ) * 10000;
+		    return x - Math.floor( x );
+		},
 		tw: 48, // default tile width (and height) [px]
 		ww: window.innerWidth, // window width
 		wh: window.innerHeight // window height
@@ -230,7 +234,7 @@ window.addEventListener( 'load', () => {
 	let centerLimitW = g.ww - g.mw;
 	let centerLimitH = g.wh - g.mh;
 	let twHalf = ~~( g.tw / 2 );
-	let lineWidth = ~~( g.tw / 4 );
+	let lineWidth = ~~( g.tw / 6 );
 	let ctx = k.context;
 	let pathColor = '#6BBEE1';
 
@@ -352,32 +356,42 @@ window.addEventListener( 'load', () => {
 			let pp = player.path;
 			let ppLen = pp && pp.length;
 
+			// Timestamp used as seed for random generator.
+			// The factor dictates the change rhythm. The
+			// greater the factor, the longer the random value
+			// will stay the same.
+			let timestamp = ~~( Date.now() / 250 );
+
 			if( pp && ppLen > 2 && g.isOnline ) {
 				ctx.setTransform( 1, 0, 0, 1, cx + twHalf, cy + twHalf );
 
 				ctx.beginPath();
-				ctx.strokeStyle = pathColor;
-				ctx.lineWidth = lineWidth;
 				ctx.lineJoin = 'miter';
+				ctx.lineWidth = lineWidth;
+				ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+				ctx.strokeStyle = pathColor;
 
 				let step = pp[1];
-
-				ctx.moveTo(
-					step.x * g.tw,
-					step.y * g.tw
-				);
+				ctx.moveTo( step.x * g.tw, step.y * g.tw );
 
 				for( let i = 2; i < ppLen; i++ ) {
 					step = pp[i];
 
-					ctx.lineTo(
-						step.x * g.tw,
-						step.y * g.tw
+					ctx.lineTo( step.x * g.tw, step.y * g.tw );
+
+					// Add a bit of glitter to the path.
+					let rndX = g.rndSeed( ( step.x * step.y ) + timestamp ) * 0.5 - 0.25;
+					let rndY = g.rndSeed( ( step.x + step.y ) + timestamp ) * 0.5 - 0.25;
+					let size = Math.max( g.rndSeed( i ) * lineWidth / 3, 1 );
+
+					ctx.fillRect(
+						( step.x + rndX ) * g.tw,
+						( step.y + rndY ) * g.tw,
+						size, size
 					);
 				}
 
 				ctx.stroke();
-				ctx.closePath();
 
 				// Little marker on the final tile.
 				step = pp[ppLen - 1];
