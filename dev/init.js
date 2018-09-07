@@ -166,10 +166,6 @@ window.addEventListener( 'load', () => {
 			c = `rgb(30,90,${~~blue})`;
 			map[i] = 16;
 		}
-		// Goal.
-		else if( v & 8 ) {
-			c = '#555555';
-		}
 
 		groundCtx.fillStyle = c;
 		groundCtx.fillRect( x, y, 1, 1 );
