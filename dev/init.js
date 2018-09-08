@@ -11,11 +11,7 @@ window.addEventListener( 'load', () => {
 	 */
 	function getCanvasAndCtx() {
 		let canvas = document.createElement( 'canvas' );
-		canvas.width = g.mc;
-		canvas.height = g.mr;
-
 		let ctx = canvas.getContext( '2d' );
-		ctx.imageSmoothingEnabled = false;
 
 		return [canvas, ctx];
 	}
@@ -100,6 +96,105 @@ window.addEventListener( 'load', () => {
 	}
 
 
+	/**
+	 * Update the tile and map pixel size.
+	 */
+	function updateContainSize() {
+		// Adjust tile size so the whole map
+		// is contained in the browser window.
+		let twContainX = ~~( g.ww / g.mc );
+		let twContainY = ~~( g.wh / g.mc );
+		g.tw = Math.max( g.tw, Math.max( twContainX, twContainY ) );
+
+		g.mw = g.mc * g.tw; // map width [px]
+		g.mh = g.mr * g.tw; // map height [px]
+	}
+
+
+	/**
+	 * Create the canvas image for the ground.
+	 */
+	function createGroundMap() {
+		g.groundCanvas.width = g.mc;
+		g.groundCanvas.height = g.mr;
+		g.groundCtx.imageSmoothingEnabled = false;
+
+		let tiles = [];
+		let y = 0;
+		let seed = 1;
+
+		g.map.forEach( ( v, i ) => {
+			let x = i % g.mc;
+			let green = 90 + g.rndSeed( seed++ ) * 20;
+			let c = `rgb(18,${~~green},40)`;
+
+			// Stone.
+			if( v & 4 ) {
+				c = '#282828';
+			}
+			// Water border.
+			else if( !x || !y || x == g.mc - 1 || y == g.mr - 1 ) {
+				let blue = 140 + g.rndSeed( seed++ ) * 60;
+				c = `rgb(30,90,${~~blue})`;
+				g.map[i] = 16;
+			}
+
+			g.groundCtx.fillStyle = c;
+			g.groundCtx.fillRect( x, y, 1, 1 );
+
+			y += !( ++i % g.mc );
+		} );
+	}
+
+
+	/**
+	 * Create the canvas image for the fog/shadow.
+	 */
+	function createFogMap() {
+		g.fogCanvas.width = g.mc;
+		g.fogCanvas.height = g.mr;
+		g.fogCtx.imageSmoothingEnabled = false;
+
+		let fogMapWidth = Math.ceil( g.ww / g.tw );
+		let fogMapHeight = Math.ceil( g.wh / g.tw );
+
+		for( let y = 0; y < fogMapHeight; y++ ) {
+			for( let x = 0; x < fogMapWidth; x++ ) {
+				// Euclidean distance from origin.
+				let de = Math.sqrt( x * x + y * y );
+
+				let f = ( de < 2 ) ? 0 : Math.min( 1.15 - Math.min( 3 / de, 1 ), 1 );
+				g.fogCtx.fillStyle = `rgba(0,0,0,${f})`;
+				g.fogCtx.fillRect( x, y, 1, 1 );
+			}
+		}
+	}
+
+
+	// Re-scale content if winow size changes.
+	let resizeTimeout = 0;
+
+	window.onresize = () => {
+		// Wait a bit with resizing, because the
+		// event fires quite often while resizing
+		// the window per mouse.
+		clearTimeout( resizeTimeout );
+
+		resizeTimeout = setTimeout( () => {
+			g.ww = window.innerWidth;
+			g.wh = window.innerHeight;
+
+			updateContainSize();
+			createGroundMap();
+			createFogMap();
+
+			k.canvas.width = g.ww;
+			k.canvas.height = g.wh;
+			k.context.imageSmoothingEnabled = false;
+		}, 200 );
+	};
+
+
 	// Global object to use as shortcut
 	// for some variables and functions.
 	window.g = {
@@ -122,15 +217,7 @@ window.addEventListener( 'load', () => {
 
 	window.k = kontra;
 
-
-	// Adjust tile size so the whole map
-	// is contained in the browser window.
-	let twContainX = ~~( g.ww / g.mc );
-	let twContainY = ~~( g.wh / g.mc );
-	g.tw = Math.max( g.tw, Math.max( twContainX, twContainY ) );
-
-	g.mw = g.mc * g.tw; // map width [px]
-	g.mh = g.mr * g.tw; // map height [px]
+	updateContainSize();
 
 
 	// Generate map.
@@ -168,31 +255,8 @@ window.addEventListener( 'load', () => {
 	// and create a new image, which is then used
 	// and just moved around.
 
-	let [groundCanvas, groundCtx] = getCanvasAndCtx( 'ground' );
-	let tiles = [];
-	let y = 0;
-
-	map.forEach( ( v, i ) => {
-		let x = i % g.mc;
-		let green = 90 + g.rnd() * 20;
-		let c = `rgb(18,${~~green},40)`;
-
-		// Stone.
-		if( v & 4 ) {
-			c = '#282828';
-		}
-		// Water border.
-		else if( !x || !y || x == g.mc - 1 || y == g.mr - 1 ) {
-			let blue = 140 + g.rnd() * 60;
-			c = `rgb(30,90,${~~blue})`;
-			map[i] = 16;
-		}
-
-		groundCtx.fillStyle = c;
-		groundCtx.fillRect( x, y, 1, 1 );
-
-		y += !( ++i % g.mc );
-	} );
+	[g.groundCanvas, g.groundCtx] = getCanvasAndCtx( 'ground' );
+	createGroundMap();
 
 
 	// Now create a fog overlay.
@@ -202,20 +266,8 @@ window.addEventListener( 'load', () => {
 	// We will then render it 4 times and just
 	// flip it around to cover the other sides.
 
-	let [fogCanvas, fogCtx] = getCanvasAndCtx( 'fog' );
-	let fogMapWidth = Math.ceil( g.ww / g.tw );
-	let fogMapHeight = Math.ceil( g.wh / g.tw );
-
-	for( let y = 0; y < fogMapHeight; y++ ) {
-		for( let x = 0; x < fogMapWidth; x++ ) {
-			// Euclidean distance from origin.
-			let de = Math.sqrt( x * x + y * y );
-
-			let f = ( de < 2 ) ? 0 : Math.min( 1.15 - Math.min( 3 / de, 1 ), 1 );
-			fogCtx.fillStyle = `rgba(0,0,0,${f})`;
-			fogCtx.fillRect( x, y, 1, 1 );
-		}
-	}
+	[g.fogCanvas, g.fogCtx] = getCanvasAndCtx( 'fog' );
+	createFogMap();
 
 
 	// Generate the path finding map
@@ -241,17 +293,9 @@ window.addEventListener( 'load', () => {
 		}
 	} );
 
-	// Source and destination areas for fog images.
+	// Source area for fog images.
 	let sourceCut = [1, 1, g.mc - 1, g.mr - 1];
-	let dest = [0, 0, g.mw, g.mh];
-	let destCut = [g.tw, g.tw, g.mw - g.tw, g.mh - g.tw];
 
-	let wwHalf = g.ww / 2;
-	let whHalf = g.wh / 2;
-	let centerLimitW = g.ww - g.mw;
-	let centerLimitH = g.wh - g.mh;
-	let twHalf = ~~( g.tw / 2 );
-	let lineWidth = ~~( g.tw / 6 );
 	let ctx = k.context;
 	let pathColor = '#6BBEE1';
 
@@ -317,12 +361,19 @@ window.addEventListener( 'load', () => {
 		},
 
 		render: () => {
+			let centerLimitW = g.ww - g.mw;
+			let centerLimitH = g.wh - g.mh;
+			let twHalf = ~~( g.tw / 2 );
+			let lineWidth = ~~( g.tw / 6 );
+			let dest = [0, 0, g.mw, g.mh];
+			let destCut = [g.tw, g.tw, g.mw - g.tw, g.mh - g.tw];
+
 			// Center on player, but stop at borders.
-			let cx = wwHalf - player.x_px;
+			let cx = g.ww / 2 - player.x_px;
 			cx = ( cx > 0 ) ? 0 : cx;
 			cx = ( cx < centerLimitW ) ? centerLimitW : ~~cx;
 
-			let cy = whHalf - player.y_px;
+			let cy = g.wh / 2 - player.y_px;
 			cy = ( cy > 0 ) ? 0 : cy;
 			cy = ( cy < centerLimitH ) ? centerLimitH : ~~cy;
 
@@ -331,7 +382,7 @@ window.addEventListener( 'load', () => {
 
 			// Draw the ground image but upscale it.
 			// The tiles in the original are only 1x1 px.
-			ctx.drawImage( groundCanvas, ...dest );
+			ctx.drawImage( g.groundCanvas, ...dest );
 
 
 			// Goal.
@@ -339,7 +390,7 @@ window.addEventListener( 'load', () => {
 			let dtY = player.y - goal.y;
 			let dist = Math.sqrt( dtX * dtX + dtY * dtY );
 
-			if( dist < 5 ) {
+			if( dist < 4 ) {
 				ctx.globalAlpha = ( dist < 3 ) ? 1 : 0.5;
 				ctx.drawImage( goalImg, goal.x * g.tw, goal.y * g.tw, g.tw, g.tw );
 				ctx.globalAlpha = 1;
@@ -369,19 +420,19 @@ window.addEventListener( 'load', () => {
 			// Draw the fog.
 
 			// Bottom right.
-			ctx.drawImage( fogCanvas, ...sourceCut, ...destCut );
+			ctx.drawImage( g.fogCanvas, ...sourceCut, ...destCut );
 
 			// Bottom left.
 			ctx.setTransform( -1, 0, 0, 1, x + g.tw, y );
-			ctx.drawImage( fogCanvas, ...dest );
+			ctx.drawImage( g.fogCanvas, ...dest );
 
 			// Top right.
 			ctx.setTransform( 1, 0, 0, -1, x, y + g.tw );
-			ctx.drawImage( fogCanvas, ...dest );
+			ctx.drawImage( g.fogCanvas, ...dest );
 
 			// Top left.
 			ctx.setTransform( -1, 0, 0, -1, x + g.tw, y + g.tw );
-			ctx.drawImage( fogCanvas, ...sourceCut, ...destCut );
+			ctx.drawImage( g.fogCanvas, ...sourceCut, ...destCut );
 
 
 			// Draw the navigation path.
