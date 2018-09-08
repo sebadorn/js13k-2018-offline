@@ -54,7 +54,7 @@ window.addEventListener( 'load', () => {
 	 * It has to be at least a certain distance from
 	 * the goal and there has to be a path to the
 	 * goal. The game is not allowed to be impossible!
-	 * @return {Array}
+	 * @return {number[]}
 	 */
 	function getPlayerStartPos() {
 		// Start close to the border.
@@ -81,12 +81,13 @@ window.addEventListener( 'load', () => {
 		x = ~~x;
 		y = ~~y;
 
-		// Invalid position: If same as goal
+		let dtX = x - goal.x;
+		let dtY = y - goal.y;
+		let dist = Math.sqrt( dtX * dtX + dtY * dtY );
+
+		// Invalid position: If too close to goal
 		// or no path to the goal exists.
-		if(
-			( x == goal.x && y == goal.y ) ||
-			!PF.findGoal( x, y )
-		) {
+		if( dist < 50 || !PF.findGoal( x, y ) ) {
 			return getPlayerStartPos();
 		}
 
