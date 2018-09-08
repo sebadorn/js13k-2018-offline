@@ -57,9 +57,29 @@ window.addEventListener( 'load', () => {
 	 * @return {Array}
 	 */
 	function getPlayerStartPos() {
-		// Never start directly at the border.
-		let x = 2 + ~~( g.rnd() * ( g.mc - 4 ) );
-		let y = 2 + ~~( g.rnd() * ( g.mr - 4 ) );
+		// Start close to the border.
+		let r = g.rnd();
+		let x = null;
+		let y = null;
+
+		// Start on the left.
+		if( r < 0.33 ) {
+			x = 2 + g.rnd() * 4;
+			y = g.rnd() * ( g.mr - 4 );
+		}
+		// Start on the right.
+		else if( r < 0.66 ) {
+			x = g.mc - 2 - g.rnd() * 4;
+			y = g.rnd() * ( g.mr - 4 );
+		}
+		// Start on the top.
+		else {
+			x = g.rnd() * ( g.mc - 4 );
+			y = 2 + g.rnd() * 4;
+		}
+
+		x = ~~x;
+		y = ~~y;
 
 		// Invalid position: If same as goal
 		// or no path to the goal exists.
