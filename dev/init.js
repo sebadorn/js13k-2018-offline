@@ -286,7 +286,12 @@ window.addEventListener( 'load', () => {
 			player.update( dt );
 
 			for( let i = 0; i < numMonsters; i++ ) {
-				monsters[i].updateMonster( dt, player );
+				let m = monsters[i];
+				m.updateMonster( dt, player );
+
+				if( m.x == player.x && m.y == player.y ) {
+					player.takeDamage();
+				}
 			}
 		},
 
@@ -309,7 +314,15 @@ window.addEventListener( 'load', () => {
 
 
 			// Goal.
-			ctx.drawImage( goalImg, goal.x * g.tw, goal.y * g.tw, g.tw, g.tw );
+			let dtX = player.x - goal.x;
+			let dtY = player.y - goal.y;
+			let dist = Math.sqrt( dtX * dtX + dtY * dtY );
+
+			if( dist < 5 ) {
+				ctx.globalAlpha = ( dist < 3 ) ? 1 : 0.5;
+				ctx.drawImage( goalImg, goal.x * g.tw, goal.y * g.tw, g.tw, g.tw );
+				ctx.globalAlpha = 1;
+			}
 
 			// Monsters.
 			for( let i = 0; i < numMonsters; i++ ) {
@@ -328,6 +341,8 @@ window.addEventListener( 'load', () => {
 			if( !g.isAtGoal ) {
 				ctx.drawImage( playerImg, ...player.getImgCut(), 0, 0, g.tw, g.tw );
 			}
+
+			player.drawBlood( ctx );
 
 
 			// Draw the fog.
