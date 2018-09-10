@@ -191,6 +191,12 @@ window.addEventListener( 'load', () => {
 			k.canvas.width = g.ww;
 			k.canvas.height = g.wh;
 			k.context.imageSmoothingEnabled = false;
+
+			// Before the game has been started by
+			// the player, but the game loop is ready.
+			if( loop && loop.isStopped ) {
+				loop.render();
+			}
 		}, 200 );
 	};
 
@@ -199,6 +205,7 @@ window.addEventListener( 'load', () => {
 	// for some variables and functions.
 	window.g = {
 		isAtGoal: false,
+		isGameOver: false,
 		isOnline: false,
 		started: false,
 		rnd: Math.random,
@@ -225,8 +232,8 @@ window.addEventListener( 'load', () => {
 	g.map = map.fill( 2 );
 
 
-	// Place stones. ~4% of map should be stone.
-	let numStones = map.length * 0.04;
+	// Place stones. ~5% of map should be stone.
+	let numStones = map.length * 0.05;
 
 	while( numStones-- > 0 ) {
 		map[~~( g.rnd() * map.length )] = 4;
@@ -315,15 +322,28 @@ window.addEventListener( 'load', () => {
 
 	let playerImg = document.getElementById( 'p' );
 	let monsterImg = document.getElementById( 'm' );
-	let goalImg = document.getElementById( 'b' );
+	let variousImg = document.getElementById( 'v' );
 
 	player.path = PF.findGoal( player.x, player.y );
+
+	// Game over text.
+	let gameOverTexts = [
+		'A gnashing of teeth.',
+		'Ah, that was… a little unsatisfying.',
+		'Stared at the phone for too long?',
+		'Offline again.'
+	];
+	let gotMaxIndex = gameOverTexts.length - 1;
+	let ot = document.getElementById( 'ot' );
+	ot.textContent = gameOverTexts[Math.round( g.rnd() * gotMaxIndex )];
 
 	let loop = k.gameLoop( {
 
 		update: ( dt ) => {
+			// Player reached the goal.
 			if( player.x == goal.x && player.y == goal.y && !g.isAtGoal ) {
 				g.isAtGoal = true;
+				g.isOnline = false;
 				loop.stop();
 				loop.render(); // One last render pass to hide the player.
 				document.getElementById( 'w' ).style.display = 'flex';
@@ -331,21 +351,29 @@ window.addEventListener( 'load', () => {
 				return;
 			}
 
-			// Down.
-			if( Keys.isPressed( 40 ) ) {
-				player.mv( 0, 1, Date.now() );
+			// Too much damage, dead.
+			if( player.dmg > 1 ) {
+				g.isGameOver = true;
+				g.isOnline = false;
+				document.getElementById( 'over' ).style.display = 'flex';
 			}
-			// Left.
-			else if( Keys.isPressed( 37 ) ) {
-				player.mv( -1, 0, Date.now() );
-			}
-			// Right.
-			else if( Keys.isPressed( 39 ) ) {
-				player.mv( 1, 0, Date.now() );
-			}
-			// Up.
-			else if( Keys.isPressed( 38 ) ) {
-				player.mv( 0, -1, Date.now() );
+			else {
+				// Down.
+				if( Keys.isPressed( 40 ) ) {
+					player.mv( 0, 1, Date.now() );
+				}
+				// Left.
+				else if( Keys.isPressed( 37 ) ) {
+					player.mv( -1, 0, Date.now() );
+				}
+				// Right.
+				else if( Keys.isPressed( 39 ) ) {
+					player.mv( 1, 0, Date.now() );
+				}
+				// Up.
+				else if( Keys.isPressed( 38 ) ) {
+					player.mv( 0, -1, Date.now() );
+				}
 			}
 
 			player.update( dt );
@@ -354,7 +382,7 @@ window.addEventListener( 'load', () => {
 				let m = monsters[i];
 				m.updateMonster( dt, player );
 
-				if( m.x == player.x && m.y == player.y ) {
+				if( !g.isGameOver && m.x == player.x && m.y == player.y ) {
 					player.takeDamage();
 				}
 			}
@@ -392,8 +420,19 @@ window.addEventListener( 'load', () => {
 
 			if( dist < 4 ) {
 				ctx.globalAlpha = ( dist < 3 ) ? 1 : 0.5;
-				ctx.drawImage( goalImg, goal.x * g.tw, goal.y * g.tw, g.tw, g.tw );
+				ctx.drawImage( variousImg, 0, 0, 16, 16, goal.x * g.tw, goal.y * g.tw, g.tw, g.tw );
 				ctx.globalAlpha = 1;
+			}
+
+			// Draw the phone on the ground if it is game over.
+			if( g.isGameOver ) {
+				ctx.drawImage(
+					variousImg,
+					16, 0, 16, 16,
+					player.x * g.tw,
+					player.y * g.tw,
+					g.tw, g.tw
+				);
 			}
 
 			// Monsters.
@@ -410,14 +449,20 @@ window.addEventListener( 'load', () => {
 			let y = cy + player.y_px;
 			ctx.setTransform( 1, 0, 0, 1, x, y );
 
-			if( !g.isAtGoal ) {
+			if( !g.isAtGoal && !g.isGameOver ) {
 				ctx.drawImage( playerImg, ...player.getImgCut(), 0, 0, g.tw, g.tw );
 			}
 
-			player.drawBlood( ctx );
-
 
 			// Draw the fog.
+
+			// Game could end while player px position
+			// is not aligned with a tile. Which would
+			// make the fog look bad.
+			if( g.isAtGoal || g.isGameOver ) {
+				x = cx + player.x * g.tw;
+				y = cy + player.y * g.tw;
+			}
 
 			// Bottom right.
 			ctx.drawImage( g.fogCanvas, ...sourceCut, ...destCut );
@@ -492,6 +537,14 @@ window.addEventListener( 'load', () => {
 
 	// Render once for background.
 	loop.render();
+
+	// [r]etry
+	Keys.on( 82, () => {
+		if( g.isGameOver || g.isAtGoal ) {
+			loop.stop();
+			window.location.reload();
+		}
+	} );
 
 	// [s]tart
 	Keys.on( 83, () => {

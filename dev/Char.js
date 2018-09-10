@@ -23,13 +23,13 @@ class Char {
 		this.x_px = this.x * g.tw;
 		this.y_px = this.y * g.tw;
 
-		this.path = null;
+		this.dmg = 0;
 		this.monster = isMonster;
+		this.path = null;
 
 		this._invincible = 0;
 		this._progress = 0;
-		this._progressBlood = 1;
-		this._speed = isMonster ? 0.3 : 0.12;
+		this._speed = isMonster ? 0.24 : 0.12;
 
 		// Direction of movement.
 		// 1: up
@@ -60,6 +60,10 @@ class Char {
 
 		if( !this.monster && g.isOnline ) {
 			t[0] += 32;
+		}
+
+		if( this.dmg ) {
+			t[1] += 32;
 		}
 
 		return t;
@@ -129,39 +133,7 @@ class Char {
 		// For 2 seconds no more damage can be taken.
 		this._invincible = 2;
 
-		this._progressBlood = 0;
-	}
-
-
-	/**
-	 * Draw a blood effect.
-	 * @param {CanvasRenderingContext2D} ctx
-	 */
-	drawBlood( ctx ) {
-		if( this._progressBlood == 1 ) {
-			return;
-		}
-
-		// let tw8 = g.tw / 8;
-		// let f = this._progressBlood * Math.PI - Math.PI / 2;
-		// let x = -Math.sin( f ) * tw8 - tw8;
-		// let y = -Math.cos( f ) * tw8;
-
-		ctx.fillStyle = 'red';
-		ctx.fillRect( 0, 0, g.tw / 8, g.tw / 8 );
-		// ctx.fillRect( x, y, tw8, tw8 );
-		// ctx.fillRect(
-		// 	x + tw8 * 2,
-		// 	y + tw8,
-		// 	tw8 / 2,
-		// 	tw8 / 2
-		// );
-		// ctx.fillRect(
-		// 	x + tw8 * 1.5,
-		// 	y + tw8 * 0.5,
-		// 	tw8 / 1.5,
-		// 	tw8 / 1.5
-		// );
+		this.dmg++;
 	}
 
 
@@ -173,7 +145,6 @@ class Char {
 		this._invincible = Math.max( this._invincible - dt, 0 );
 
 		this._progress += dt / this._speed;
-		this._progressBlood = Math.min( this._progressBlood + dt, 1 );
 
 		if( this._progress > 1 ) {
 			this._progress = 1;
@@ -196,18 +167,21 @@ class Char {
 
 		this._last += dt;
 
+		let targetPlayer = false;
 		let dtX = this.x - player.x;
 		let dtY = this.y - player.y;
-		let playerDistance = Math.sqrt( dtX * dtX + dtY * dtY );
 
-		let targetPlayer = g.isOnline || playerDistance < 6;
+		if( !g.isGameOver ) {
+			let playerDistance = Math.sqrt( dtX * dtX + dtY * dtY );
+			targetPlayer = g.isOnline || playerDistance < 6;
+		}
 
 		// They are fast once they hunt, but
 		// have to be slower than the player.
 		let rhythm = targetPlayer ? this._speed : 1;
 
 		// Movement rhythm.
-		if( !playerDistance || this._last < rhythm ) {
+		if( this._last < rhythm ) {
 			return;
 		}
 
