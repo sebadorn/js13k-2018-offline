@@ -337,9 +337,18 @@ window.addEventListener( 'load', () => {
 	let ot = document.getElementById( 'ot' );
 	ot.textContent = gameOverTexts[Math.round( g.rnd() * gotMaxIndex )];
 
+	let lastUpdate = 0;
+	g.dt = 1 / 60;
+
 	let loop = k.gameLoop( {
 
 		update: ( dt ) => {
+			if( lastUpdate ) {
+				g.dt = performance.now() - lastUpdate;
+			}
+
+			lastUpdate = performance.now();
+
 			// Player reached the goal.
 			if( player.x == goal.x && player.y == goal.y && !g.isAtGoal ) {
 				g.isAtGoal = true;

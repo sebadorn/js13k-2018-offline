@@ -144,7 +144,7 @@ class Char {
 	update( dt ) {
 		this._invincible = Math.max( this._invincible - dt, 0 );
 
-		this._progress += dt / this._speed;
+		this._progress += g.dt / 1000 / this._speed;
 
 		if( this._progress > 1 ) {
 			this._progress = 1;
@@ -152,8 +152,8 @@ class Char {
 
 		let p = this._progress;
 
-		this.x_px = ( p * this.x + ( 1 - p ) * this.x_old ) * g.tw;
-		this.y_px = ( p * this.y + ( 1 - p ) * this.y_old ) * g.tw;
+		this.x_px = ~~( ( p * this.x + ( 1 - p ) * this.x_old ) * g.tw );
+		this.y_px = ~~( ( p * this.y + ( 1 - p ) * this.y_old ) * g.tw );
 	}
 
 
