@@ -1,4 +1,4 @@
-# On/Off
+# Risky Nav
 
 Entry for the [js13k competition of 2018](https://2018.js13kgames.com/).  
 Theme: **Offline**

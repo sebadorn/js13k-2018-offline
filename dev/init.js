@@ -358,20 +358,22 @@ window.addEventListener( 'load', () => {
 				document.getElementById( 'over' ).style.display = 'flex';
 			}
 			else {
+				let arrow = Keys.getArrowKey();
+
 				// Down.
-				if( Keys.isPressed( 40 ) ) {
+				if( arrow == 40 ) {
 					player.mv( 0, 1, Date.now() );
 				}
 				// Left.
-				else if( Keys.isPressed( 37 ) ) {
+				else if( arrow == 37 ) {
 					player.mv( -1, 0, Date.now() );
 				}
 				// Right.
-				else if( Keys.isPressed( 39 ) ) {
+				else if( arrow == 39 ) {
 					player.mv( 1, 0, Date.now() );
 				}
 				// Up.
-				else if( Keys.isPressed( 38 ) ) {
+				else if( arrow == 38 ) {
 					player.mv( 0, -1, Date.now() );
 				}
 			}
@@ -396,12 +398,23 @@ window.addEventListener( 'load', () => {
 			let dest = [0, 0, g.mw, g.mh];
 			let destCut = [g.tw, g.tw, g.mw - g.tw, g.mh - g.tw];
 
+			let playerX_px = player.x_px;
+			let playerY_px = player.y_px;
+
+			// Game could end while player px position
+			// is not aligned with a tile. Which would
+			// make the fog look bad.
+			if( g.isAtGoal || g.isGameOver ) {
+				playerX_px = player.x * g.tw;
+				playerY_px = player.y * g.tw;
+			}
+
 			// Center on player, but stop at borders.
-			let cx = g.ww / 2 - player.x_px;
+			let cx = g.ww / 2 - playerX_px;
 			cx = ( cx > 0 ) ? 0 : cx;
 			cx = ( cx < centerLimitW ) ? centerLimitW : ~~cx;
 
-			let cy = g.wh / 2 - player.y_px;
+			let cy = g.wh / 2 - playerY_px;
 			cy = ( cy > 0 ) ? 0 : cy;
 			cy = ( cy < centerLimitH ) ? centerLimitH : ~~cy;
 
@@ -419,7 +432,7 @@ window.addEventListener( 'load', () => {
 			let dist = Math.sqrt( dtX * dtX + dtY * dtY );
 
 			if( dist < 4 ) {
-				ctx.globalAlpha = ( dist < 3 ) ? 1 : 0.5;
+				ctx.globalAlpha = ( dist < 2 ) ? 1 : 0.4;
 				ctx.drawImage( variousImg, 0, 0, 16, 16, goal.x * g.tw, goal.y * g.tw, g.tw, g.tw );
 				ctx.globalAlpha = 1;
 			}
@@ -445,8 +458,8 @@ window.addEventListener( 'load', () => {
 			}
 
 			// Player.
-			let x = cx + player.x_px;
-			let y = cy + player.y_px;
+			let x = cx + playerX_px;
+			let y = cy + playerY_px;
 			ctx.setTransform( 1, 0, 0, 1, x, y );
 
 			if( !g.isAtGoal && !g.isGameOver ) {
@@ -455,14 +468,6 @@ window.addEventListener( 'load', () => {
 
 
 			// Draw the fog.
-
-			// Game could end while player px position
-			// is not aligned with a tile. Which would
-			// make the fog look bad.
-			if( g.isAtGoal || g.isGameOver ) {
-				x = cx + player.x * g.tw;
-				y = cy + player.y * g.tw;
-			}
 
 			// Bottom right.
 			ctx.drawImage( g.fogCanvas, ...sourceCut, ...destCut );
@@ -508,8 +513,8 @@ window.addEventListener( 'load', () => {
 					ctx.lineTo( step.x * g.tw, step.y * g.tw );
 
 					// Add a bit of glitter to the path.
-					let rndX = g.rndSeed( ( step.x * step.y ) + timestamp ) * 0.5 - 0.25;
-					let rndY = g.rndSeed( ( step.x + step.y ) + timestamp ) * 0.5 - 0.25;
+					let rndX = g.rndSeed( step.x * step.y + timestamp ) * 0.5 - 0.25;
+					let rndY = g.rndSeed( step.x + step.y + timestamp ) * 0.5 - 0.25;
 					let size = Math.max( g.rndSeed( i ) * lineWidth / 3, 1 );
 
 					ctx.fillRect(
