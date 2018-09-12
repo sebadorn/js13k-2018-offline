@@ -5,13 +5,15 @@
 *{margin:0;overflow:hidden;padding:0;-moz-user-select:none;-webkit-user-select:none;user-select:none;}
 html,body{background:#111;height:100%;}
 img{display:none;}
-#over,#t,#w{align-items:center;background:rgba(0,0,0,0.6);color:#BBB;display:none;flex-direction:column;font:24px sans-serif;height:100%;justify-content:center;position:absolute;text-align:center;width:100%;}
+#hit,#over,#t,#w{align-items:center;background:rgba(0,0,0,0.6);color:#BBB;display:none;flex-direction:column;font:24px sans-serif;height:100%;justify-content:center;left:0;position:absolute;text-align:center;top:0;width:100%;}
 #t{display:flex;}
+#hit{background:#AC3232;display:block;opacity:0;-webkit-transition:opacity 150ms;transition:opacity 150ms;}
 h1,h2{font-size:64px;letter-spacing:4px;margin:-50px 0 24px;}
 p{color:#888;line-height:33px;margin-bottom:33px;width:50%;}
 code{color:#DDD;}
 </style>
 <body>
+<div id="hit"></div>
 <img id="p" src="assets/player.png" />
 <img id="m" src="assets/monster.png" />
 <img id="v" src="assets/various.png" />

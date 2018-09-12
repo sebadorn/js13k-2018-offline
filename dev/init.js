@@ -232,8 +232,8 @@ window.addEventListener( 'load', () => {
 	g.map = map.fill( 2 );
 
 
-	// Place stones. ~5% of map should be stone.
-	let numStones = map.length * 0.05;
+	// Place stones. ~6% of map should be stone.
+	let numStones = map.length * 0.06;
 
 	while( numStones-- > 0 ) {
 		map[~~( g.rnd() * map.length )] = 4;

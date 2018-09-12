@@ -134,6 +134,13 @@ class Char {
 		this._invincible = 2;
 
 		this.dmg++;
+
+		let hit = document.getElementById( 'hit' );
+		hit.style.opacity = 0.5;
+
+		setTimeout( () => {
+			hit.style.opacity = 0;
+		}, 150 );
 	}
 
 
